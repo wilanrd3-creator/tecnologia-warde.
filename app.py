@@ -52,6 +52,12 @@ with st.expander("🎨 DISEÑO GRÁFICO: Marca y Redes Sociales"):
     st.write("📸 **Paquetes para Instagram/Facebook:** Diseños personalizados en Canva para que tu negocio local destaque de la competencia. *(RD$ 150 - RD$ 300)*")
     st.write("✉️ **Invitaciones Digitales:** Tarjetas interactivas para eventos especiales listas para enviar por WhatsApp. *(RD$ 200)*")
 
+with st.expander("🔗 Síguenos en Nuestras Redes Sociales"):
+    st.write("👍 **Facebook:** [Tecnología Warde](https://www.facebook.com/profile.php?id=61591849505301)")
+    st.write("📱 **Instagram:** [@tecn.ologia891](https://www.instagram.com/tecn.ologia891/)")
+    st.write("🎵 **TikTok:** [@tecnologiawarde](https://www.tiktok.com/@tecnologiawarde?lang=es-419)")
+    st.write("🎮 **Discord:** [Únete a nuestro servidor](https://discord.com/invite/vATQrTftJ)")
+
 st.write("")
 st.write("---")
 
