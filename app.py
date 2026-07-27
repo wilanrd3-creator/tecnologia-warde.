@@ -82,46 +82,88 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA DE MITIGACIÓN DE CUOTAS 429) ===
-st.header("🤖 Consultor de Inteligencia Artificial Warde")
-st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
+# === SECCIÓN: CHAT DE IA 24/7 (CON HISTORIAL, ESTILO ASISTENTE VIRTUAL) ===
+st.header("🤖 Chat IA Warde — Disponible 24/7")
+st.write("Nuestro asistente virtual está activo a toda hora, incluso cuando el equipo humano no está conectado:")
 
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 
-pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dame una idea para un video de YouTube...")
+SYSTEM_PROMPT = (
+    "Eres el asistente virtual oficial de 'Tecnología Warde', una empresa dominicana de servicios "
+    "digitales (edición de video, diseño gráfico y desarrollo web). "
+    "Responde siempre en español, de forma directa, profesional, amigable y en pocas líneas. "
+    "Si te preguntan precios, usa el catálogo mostrado en la página. "
+    "Si no sabes algo con certeza, dilo y sugiere contactar a la Junta Directiva por el formulario de abajo."
+)
+
+# Inicializamos el historial del chat en la sesión (se mantiene mientras el usuario navega)
+if "chat_historial" not in st.session_state:
+    st.session_state.chat_historial = []
+
+# Mostramos el historial de la conversación
+for autor, texto in st.session_state.chat_historial:
+    with st.chat_message(autor):
+        st.write(texto)
+
+# Caja de entrada tipo chat, siempre disponible al final de la sección
+pregunta = st.chat_input("Escribe tu mensaje aquí... (Ej. ¿Cuánto cuesta una página web?)")
 
 if pregunta:
-    if not GEMINI_API_KEY:
-        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'GEMINI_API_KEY' en Streamlit Cloud para activarla por completo.")
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando conectemos la clave de Google, podré responderte al instante.")
-    else:
-        st.write("⚡ *Consultando al cerebro de Google Gemini...*")
+    st.session_state.chat_historial.append(("user", pregunta))
+    with st.chat_message("user"):
+        st.write(pregunta)
 
-        try:
-            clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
-            client = genai.Client(api_key=clave_limpia)
-
-            contexto_empresa = (
-                "Eres un asistente tecnológico experto, ingenioso y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
-                "Responde siempre en español de forma directa, profesional y en pocas líneas. "
-                f"Pregunta del cliente: {pregunta}"
+    with st.chat_message("assistant"):
+        if not GEMINI_API_KEY:
+            respuesta = (
+                "👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Estoy en modo de demostración "
+                "porque aún no se ha configurado la clave 'GEMINI_API_KEY' en Streamlit Cloud. "
+                "Mientras tanto, puedes revisar el catálogo arriba o escribirnos por el formulario de contacto."
             )
+            st.write(respuesta)
+        else:
+            with st.spinner("⚡ Pensando..."):
+                try:
+                    clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
+                    client = genai.Client(api_key=clave_limpia)
 
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=contexto_empresa,
-            )
+                    # Construimos el historial en el formato que espera la API,
+                    # para que la IA recuerde el contexto de la conversación
+                    contenidos = [SYSTEM_PROMPT]
+                    for autor_previo, texto_previo in st.session_state.chat_historial[:-1]:
+                        prefijo = "Cliente" if autor_previo == "user" else "Asistente"
+                        contenidos.append(f"{prefijo}: {texto_previo}")
+                    contenidos.append(f"Cliente: {pregunta}")
 
-            st.success("🤖 **Respuesta de la IA:**")
-            st.write(response.text)
+                    response = client.models.generate_content(
+                        model='gemini-2.0-flash',
+                        contents="\n".join(contenidos),
+                    )
 
-        except Exception as e:
-            error_str = str(e)
-            # SOLUCIÓN EXCLUSIVA: Si se agotan las consultas gratuitas, mostramos un mensaje limpio para el usuario
-            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
-                st.warning("⏳ Nuestro consultor de IA ha procesado muchas preguntas en las últimas horas y está descansando temporalmente. Por favor, intenta de nuevo en unos minutos o escribe de forma directa a la Junta Directiva abajo.")
-            else:
-                st.error("⚠️ Los servidores de Google AI están procesando cambios en su red. Inténtalo de nuevo en breve.")
+                    respuesta = response.text
+
+                except Exception as e:
+                    error_str = str(e)
+                    if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                        respuesta = (
+                            "⏳ He procesado muchas preguntas en las últimas horas y estoy descansando "
+                            "temporalmente. Intenta de nuevo en unos minutos o escribe directamente a la "
+                            "Junta Directiva abajo."
+                        )
+                    else:
+                        respuesta = (
+                            "⚠️ Los servidores de Google AI están procesando cambios en su red. "
+                            "Inténtalo de nuevo en breve."
+                        )
+
+                st.write(respuesta)
+
+        st.session_state.chat_historial.append(("assistant", respuesta))
+
+if st.session_state.chat_historial:
+    if st.button("🗑️ Borrar conversación"):
+        st.session_state.chat_historial = []
+        st.rerun()
 
 st.write("---")
 
