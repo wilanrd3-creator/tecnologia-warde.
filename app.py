@@ -6,6 +6,7 @@ try:
     from google import genai
 except ImportError:
     st.error("⚠️ Falta instalar la librería de Google. Asegúrate de añadir 'google-genai' en tu archivo requirements.txt de GitHub.")
+    st.stop()
 
 # 1. Configuración de pestaña con título y logo futurista
 st.set_page_config(page_title="Tecnología Warde | Oficial", page_icon="⚡", layout="centered")
@@ -31,7 +32,7 @@ st.write("---")
 # 4. Presentación de la Empresa
 st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en reality. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
 
-st.write("") 
+st.write("")
 
 # 5. Catálogo de Servicios con Bloques Desplegables
 st.header("📋 Nuestro Catálogo de Servicios")
@@ -65,9 +66,9 @@ st.header("👥 Junta Directiva")
 col_fund1, col_fund2, col_fund3 = st.columns(3)
 
 with col_fund1:
-    st.markdown("### 👤 Fundador 1: Desconocido")
+    st.markdown("### 👤 Fundador 1")
     st.caption("🔒 *Estatus: Identidad Protegida*")
-    st.markdown("> **Pista:** *Dicen que su primer nombre es Wilan, tiene 12 años, un talento increíble para los negocios y programa desde las sombras en RD...* 🕵️‍♂️")
+    st.markdown("> **Rol:** *Visión de negocio y desarrollo. Prefiere mantener su identidad reservada.* 🕵️")
 
 with col_fund2:
     st.markdown("### 👨‍💻 Fundador 2: Liam Muller")
@@ -85,38 +86,35 @@ st.write("---")
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
-try:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    GEMINI_API_KEY = None
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
 
 pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dame una idea para un video de YouTube...")
 
 if pregunta:
     if not GEMINI_API_KEY:
         st.warning("⚙️ La IA está en modo de demostración. Configura tu 'GEMINI_API_KEY' en Streamlit Cloud para activarla por completo.")
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave de Google, podré responderte al instante.")
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando conectemos la clave de Google, podré responderte al instante.")
     else:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
-        
+
         try:
             clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
             client = genai.Client(api_key=clave_limpia)
-            
+
             contexto_empresa = (
                 "Eres un asistente tecnológico experto, ingenioso y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
                 "Responde siempre en español de forma directa, profesional y en pocas líneas. "
                 f"Pregunta del cliente: {pregunta}"
             )
-            
+
             response = client.models.generate_content(
                 model='gemini-2.0-flash',
                 contents=contexto_empresa,
             )
-            
+
             st.success("🤖 **Respuesta de la IA:**")
             st.write(response.text)
-            
+
         except Exception as e:
             error_str = str(e)
             # SOLUCIÓN EXCLUSIVA: Si se agotan las consultas gratuitas, mostramos un mensaje limpio para el usuario
@@ -131,7 +129,7 @@ st.write("---")
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos para generar tu orden de servicio:")
 
-telefono_warde = "18298751503" 
+telefono_warde = "18298751503"
 
 nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
 contacto_cliente = st.text_input("📱 Tu Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
@@ -159,10 +157,10 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
         f"🛠️ *Servicio:* {servicio_seleccionado}\n"
         f"✏️ *Detalles:* {detalles_proyecto}"
     )
-    
+
     mensaje_codificado = urllib.parse.quote(mensaje_texto)
-    enlace_whatsapp = f"https://wa.me{telefono_warde}?text={mensaje_codificado}"
-    
+    enlace_whatsapp = f"https://wa.me/{telefono_warde}?text={mensaje_codificado}"
+
     st.write("")
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
