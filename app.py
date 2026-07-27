@@ -129,7 +129,7 @@ st.write("---")
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos para generar tu orden de servicio:")
 
-telefono_warde = "18298751503"
+telefono_warde = "18094523054"
 
 nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
 contacto_cliente = st.text_input("📱 Tu Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
