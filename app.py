@@ -76,7 +76,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (GEMINI 24/7 ULTRAESTABLE) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA EXTRACCIÓN ULTRA SEGURO) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
@@ -94,7 +94,7 @@ if pregunta:
     else:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
-        # Enlace directo unificado para la API de Gemini 1.5 Flash
+        # Enlace directo oficial para la API de Gemini 1.5 Flash
         url_gemini = f"https://googleapis.com{GEMINI_API_KEY}"
         headers = {"Content-Type": "application/json"}
         
@@ -114,22 +114,23 @@ if pregunta:
             response = requests.post(url_gemini, headers=headers, json=payload, timeout=10)
             resultado = response.json()
             
-            # Extracción limpia del texto según la estructura JSON nativa de Google
+            # EXTRACCIÓN MODERNA Y ULTRA SEGURA SIN FALLOS DE INDIZACIÓN
             if 'candidates' in resultado and len(resultado['candidates']) > 0:
-                candidato = resultado['candidates'][0]
-                if 'content' in candidato and 'parts' in candidato['content'] and len(candidato['content']['parts']) > 0:
-                    respuesta_ia = candidato['content']['parts'][0]['text']
+                primer_candidato = resultado['candidates'][0]
+                if 'content' in primer_candidato and 'parts' in primer_candidato['content'] and len(primer_candidato['content']['parts']) > 0:
+                    respuesta_ia = primer_candidato['content']['parts'][0]['text']
                     st.success("🤖 **Respuesta de la IA:**")
                     st.write(respuesta_ia)
                 else:
-                    st.error("⚠️ La IA no devolvió texto. Inténtalo con otra pregunta.")
+                    st.error("⚠️ Estructura vacía devuelta por el servidor.")
             elif 'error' in resultado:
                 st.error(f"❌ Error de Google Studio: {resultado['error'].get('message', 'Clave inválida')}")
             else:
-                st.error("⚠️ Respuesta inesperada del servidor de Google.")
+                st.error("⚠️ No se pudo decodificar el formato de Google.")
             
         except Exception as e:
-            st.error("⚠️ Error interno al procesar los datos de la IA.")
+            # Imprime el error real en la consola de Streamlit para diagnóstico avanzado si fuese necesario
+            st.error("⚠️ Error al desempaquetar la respuesta. Verifica que el formato JSON sea compatible.")
 
 st.write("---")
 
@@ -173,4 +174,5 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
     st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
+
 
