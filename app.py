@@ -81,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (LIBRERÍA OFICIAL GOOGLE 24/7) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (LIBRERÍA OFICIAL GOOGLE 24/7 ACTUALIZADA) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
@@ -100,10 +100,10 @@ if pregunta:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
         try:
-            # CORRECCIÓN DE SEGURIDAD: Limpiamos comillas accidentales en el servidor
+            # Limpiamos comillas accidentales que queden guardadas en el panel
             clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
             
-            # Inicializamos el cliente oficial de Google usando tu clave segura
+            # Inicializamos el cliente oficial de Google
             client = genai.Client(api_key=clave_limpia)
             
             contexto_empresa = (
@@ -112,18 +112,17 @@ if pregunta:
                 f"Pregunta del cliente: {pregunta}"
             )
             
-            # Llamada limpia al modelo oficial que maneja los datos por sí solo
+            # SOLUCIÓN: Cambiado el nombre del modelo a 'gemini-2.5-flash' para resolver el error 404
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.5-flash',
                 contents=contexto_empresa,
             )
             
-            # Mostramos el resultado sin importar cómo venga estructurado por dentro
+            # Mostramos el resultado limpio en el recuadro verde de éxito
             st.success("🤖 **Respuesta de la IA:**")
             st.write(response.text)
             
         except Exception as e:
-            # Si hay un error, mostramos el error técnico exacto para saber qué corregir
             st.error(f"⚠️ Ocurrió un inconveniente con los servidores de Google AI. Detalles del error: {str(e)}")
 
 st.write("---")
@@ -168,3 +167,4 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
     st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
+
