@@ -61,7 +61,6 @@ st.write("---")
 # 7. Sección de Fundadores Estructurada con Columnas
 st.header("👥 Junta Directiva")
 
-# SOLUCIÓN: Añadimos col_fund3 y cambiamos el parámetro a 3 columnas
 col_fund1, col_fund2, col_fund3 = st.columns(3)
 
 with col_fund1:
@@ -79,4 +78,54 @@ with col_fund3:
     st.caption("⚡ *Estatus: Activo*")
     st.markdown("> **Rol:** *Administrador ejecutivo, Líder de las acciones y jefe del departamento de recursos humanos.* 🛠️")
 
+st.write("---")
 
+# 8. Formulario de Contacto Interactivo Automatizado
+st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
+st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
+
+# CAMBIA ESTE CORREO POR EL TUYO REAL PARA RECIBIR LOS MENSAJES DE TUS CLIENTES
+tu_correo = "wilan@ejemplo.com" 
+
+url_formulario = f"https://formsubmit.co{tu_correo}"
+
+with st.form(key="formulario_contacto", clear_on_submit=True):
+    nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
+    contacto_cliente = st.text_input("📱 Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
+    
+    servicio_seleccionado = st.selectbox(
+        "🛠️ ¿Qué servicio necesitas?",
+        [
+            "Selecciona una opción...",
+            "MULTIMEDIA: Edición de Video Corto",
+            "MULTIMEDIA: Miniatura de YouTube",
+            "PROGRAMACIÓN: Página Web con Python",
+            "PROGRAMACIÓN: Soporte / Servidor de Discord",
+            "DISEÑO: Paquete para Redes Sociales",
+            "DISEÑO: Invitación Digital"
+        ]
+    )
+    
+    detalles_proyecto = st.text_area("✏️ Cuéntanos más detalles sobre tu idea", placeholder="Escribe aquí lo que necesitas...")
+    
+    boton_enviar = st.form_submit_button(label="🚀 Enviar Solicitud de Cotización", type="primary")
+
+    if boton_enviar:
+        if nombre_cliente == "" or contacto_cliente == "" or servicio_seleccionado == "Selecciona una opción...":
+            st.error("⚠️ Por favor, llena los campos obligatorios (Nombre, Contacto y Servicio).")
+        else:
+            st.success("🎉 ¡Procesando envío! Serás redirigido para confirmar tu mensaje.")
+            
+            # Formulario oculto que se ejecuta en segundo plano para enviar la información a FormSubmit
+            formulario_html = f"""
+            <form id="click_form" action="{url_formulario}" method="POST" target="_self">
+                <input type="hidden" name="Nombre" value="{nombre_cliente}">
+                <input type="hidden" name="WhatsApp" value="{contacto_cliente}">
+                <input type="hidden" name="Servicio" value="{servicio_seleccionado}">
+                <input type="hidden" name="Detalles" value="{detalles_proyecto}">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_next" value="https://streamlit.app">
+            </form>
+            <script>document.getElementById("click_form").submit();</script>
+            """
+            st.markdown(formulario_html, unsafe_allow_html=True)
