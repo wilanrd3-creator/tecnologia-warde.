@@ -1,6 +1,11 @@
 import streamlit as st
-import requests
 import urllib.parse
+
+# Intentamos importar la librería oficial de Google AI
+try:
+    from google import genai
+except ImportError:
+    st.error("⚠️ Falta instalar la librería de Google. Asegúrate de añadir 'google-genai' en tu archivo requirements.txt de GitHub.")
 
 # 1. Configuración de pestaña con título y logo futurista
 st.set_page_config(page_title="Tecnología Warde | Oficial", page_icon="⚡", layout="centered")
@@ -76,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA EXTRACCIÓN ULTRA SEGURO) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (LIBRERÍA OFICIAL GOOGLE 24/7) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
@@ -94,43 +99,28 @@ if pregunta:
     else:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
-        # Enlace directo oficial para la API de Gemini 1.5 Flash
-        url_gemini = f"https://googleapis.com{GEMINI_API_KEY}"
-        headers = {"Content-Type": "application/json"}
-        
-        contexto_empresa = (
-            "Eres un asistente tecnológico experto, ingenioso y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
-            "Responde siempre en español, de forma clara, directa y en pocas líneas. "
-            f"Pregunta del cliente: {pregunta}"
-        )
-        
-        payload = {
-            "contents": [{
-                "parts": [{"text": contexto_empresa}]
-            }]
-        }
-        
         try:
-            response = requests.post(url_gemini, headers=headers, json=payload, timeout=10)
-            resultado = response.json()
+            # Inicializamos el cliente oficial de Google usando tu clave segura
+            client = genai.Client(api_key=GEMINI_API_KEY)
             
-            # EXTRACCIÓN MODERNA Y ULTRA SEGURA SIN FALLOS DE INDIZACIÓN
-            if 'candidates' in resultado and len(resultado['candidates']) > 0:
-                primer_candidato = resultado['candidates'][0]
-                if 'content' in primer_candidato and 'parts' in primer_candidato['content'] and len(primer_candidato['content']['parts']) > 0:
-                    respuesta_ia = primer_candidato['content']['parts'][0]['text']
-                    st.success("🤖 **Respuesta de la IA:**")
-                    st.write(respuesta_ia)
-                else:
-                    st.error("⚠️ Estructura vacía devuelta por el servidor.")
-            elif 'error' in resultado:
-                st.error(f"❌ Error de Google Studio: {resultado['error'].get('message', 'Clave inválida')}")
-            else:
-                st.error("⚠️ No se pudo decodificar el formato de Google.")
+            contexto_empresa = (
+                "Eres un asistente tecnológico experto, ingenioso y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
+                "Responde siempre en español de forma directa, profesional y en pocas líneas. "
+                f"Pregunta del cliente: {pregunta}"
+            )
+            
+            # Llamada limpia al modelo oficial que maneja los datos por sí solo
+            response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=contexto_empresa,
+            )
+            
+            # Mostramos el resultado sin importar cómo venga estructurado por dentro
+            st.success("🤖 **Respuesta de la IA:**")
+            st.write(response.text)
             
         except Exception as e:
-            # Imprime el error real en la consola de Streamlit para diagnóstico avanzado si fuese necesario
-            st.error("⚠️ Error al desempaquetar la respuesta. Verifica que el formato JSON sea compatible.")
+            st.error("⚠️ Ocurrió un inconveniente con los servidores de Google AI. Inténtalo de nuevo en unos segundos.")
 
 st.write("---")
 
@@ -174,5 +164,4 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
     st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
-
 
