@@ -24,7 +24,7 @@ st.markdown("<h3 style='text-align: center; color: #888888;'>Tu tecnología en m
 st.write("---")
 
 # 4. Presentación de la Empresa
-st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en realidad. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
+st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en reality. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
 
 st.write("") 
 
@@ -76,11 +76,10 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA GEMINI 24/7 ULTRARRÁPIDO) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (GEMINI 24/7 ACTUALIZADO) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
-# Buscamos la clave segura de Google Gemini
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
@@ -90,18 +89,19 @@ pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dam
 
 if pregunta:
     if not GEMINI_API_KEY:
-        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'GEMINI_API_KEY' en Streamlit Cloud para activarla de forma permanente.")
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave de Google, podré responderte al instante las 24/7.")
+        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'GEMINI_API_KEY' en Streamlit Cloud para activarla por completo.")
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave de Google, podré responderte al instante.")
     else:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
-        # Conexión directa y veloz a la API oficial de Google AI
-        url_gemini = f"https://googleapis.com{GEMINI_API_KEY}"
+        # Conexión adaptada al nuevo sistema de autenticación Bearer de Google AI Studio
+        url_gemini = "https://googleapis.com"
+        headers = {"Authorization": f"Bearer {GEMINI_API_KEY}", "Content-Type": "application/json"}
         
         contexto_empresa = (
-            "Eres un asistente tecnológico experto, amigable y profesional para la empresa 'Tecnología Warde' de República Dominicana. "
-            "Responde de forma concisa, amena y siempre en español dominicano o estándar neutro. "
-            f"Pregunta del usuario: {pregunta}"
+            "Eres un asistente tecnológico experto y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
+            "Responde de forma corta, directa y siempre en español. "
+            f"Pregunta del cliente: {pregunta}"
         )
         
         payload = {
@@ -109,17 +109,19 @@ if pregunta:
         }
         
         try:
-            response = requests.post(url_gemini, json=payload, timeout=10)
+            response = requests.post(url_gemini, headers=headers, json=payload, timeout=10)
             resultado = response.json()
             
-            # Extracción limpia del texto del formato oficial de Google
-            respuesta_ia = resultado['candidates'][0]['content']['parts'][0]['text']
-            
-            st.success("🤖 **Respuesta de la IA:**")
-            st.write(respuesta_ia)
+            # Extracción segura de la respuesta de texto de Google
+            if 'candidates' in resultado and len(resultado['candidates']) > 0:
+                respuesta_ia = resultado['candidates'][0]['content']['parts'][0]['text']
+                st.success("🤖 **Respuesta de la IA:**")
+                st.write(respuesta_ia)
+            else:
+                st.error("⚠️ La clave de API no tiene los permisos activos todavía en Google Studio o el formato falló.")
             
         except Exception as e:
-            st.error("⚠️ Hubo un problema al procesar la solicitud con Google AI. Inténtalo de nuevo en unos segundos.")
+            st.error("⚠️ Hubo un problema de formato al conectar con Google AI. Inténtalo de nuevo.")
 
 st.write("---")
 
@@ -127,7 +129,6 @@ st.write("---")
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos para generar tu orden de servicio:")
 
-# Cambia este número por tu WhatsApp real si es necesario (ej: "18298751503")
 telefono_warde = "18298751503" 
 
 nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
@@ -164,3 +165,4 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
     st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
+
