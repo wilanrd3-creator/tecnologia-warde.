@@ -112,7 +112,12 @@ SYSTEM_PROMPT = (
     "- Paquetes de Posts para Facebook/Instagram: RD$ 150 - RD$ 300 por diseño\n"
     "- Invitaciones Digitales: RD$ 200 por diseño\n\n"
     "MÉTODO DE PAGO: transferencia bancaria directa por Banco BHD (República Dominicana).\n"
-    "Toda contratación o presupuesto final debe coordinarse con el Administrador Ejecutivo de la empresa."
+    "Toda contratación o presupuesto final debe coordinarse con el Administrador Ejecutivo de la empresa.\n\n"
+    "INFORMACIÓN DEL EQUIPO — si te preguntan por 'Dawel Sonyis' o el 'Fundador 3', responde con esto:\n"
+    "👨‍💼 Fundador 3: Dawel Sonyis\n"
+    "⚡ Estatus: Activo\n"
+    "Rol: Fundador de Tecnología Warde y mayor accionista. Administrador ejecutivo, líder de las acciones "
+    "y jefe del departamento de recursos humanos. 🛠️"
 )
 
 # Inicializamos el historial del chat en la sesión (se mantiene mientras el usuario navega)
