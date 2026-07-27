@@ -61,7 +61,8 @@ st.write("---")
 # 7. Sección de Fundadores Estructurada con Columnas
 st.header("👥 Junta Directiva")
 
-col_fund1, col_fund2 = st.columns(2)
+# SOLUCIÓN: Añadimos col_fund3 y cambiamos el parámetro a 3 columnas
+col_fund1, col_fund2, col_fund3 = st.columns(3)
 
 with col_fund1:
     st.markdown("### 👤 Fundador 1: Desconocido")
@@ -74,8 +75,8 @@ with col_fund2:
     st.markdown("> **Rol:** *Desarrollador de Sistemas, Co-Fundador y Especialista en Optimización Tecnológica.* 🛠️")
 
 with col_fund3:
-    st.markdown("### 👨‍💻 Fundador 3: Dawel Sonyis")
+    st.markdown("### 👨‍💼 Fundador 3: Dawel Sonyis")
     st.caption("⚡ *Estatus: Activo*")
-    st.markdown("> **Rol:** *Administrador ejecutivo, Lider de las aciones y jefe del departamento de recursos humano.* 🛠️")
+    st.markdown("> **Rol:** *Administrador ejecutivo, Líder de las acciones y jefe del departamento de recursos humanos.* 🛠️")
 
 
