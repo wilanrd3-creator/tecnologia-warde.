@@ -81,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (LIBRERÍA OFICIAL GOOGLE CON MODELO REPARADO) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA DE MITIGACIÓN DE CUOTAS 429) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
@@ -100,10 +100,7 @@ if pregunta:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
         try:
-            # Limpiamos comillas accidentales del panel
             clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
-            
-            # Inicializamos el cliente oficial de Google
             client = genai.Client(api_key=clave_limpia)
             
             contexto_empresa = (
@@ -112,18 +109,21 @@ if pregunta:
                 f"Pregunta del cliente: {pregunta}"
             )
             
-            # SOLUCIÓN: Cambiado el nombre al modelo global actualizable que no genera error 404
             response = client.models.generate_content(
                 model='gemini-2.0-flash',
                 contents=contexto_empresa,
             )
             
-            # Mostramos el resultado limpio en el recuadro verde de éxito
             st.success("🤖 **Respuesta de la IA:**")
             st.write(response.text)
             
         except Exception as e:
-            st.error(f"⚠️ Ocurrió un inconveniente con los servidores de Google AI. Detalles del error: {str(e)}")
+            error_str = str(e)
+            # SOLUCIÓN EXCLUSIVA: Si se agotan las consultas gratuitas, mostramos un mensaje limpio para el usuario
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                st.warning("⏳ Nuestro consultor de IA ha procesado muchas preguntas en las últimas horas y está descansando temporalmente. Por favor, intenta de nuevo en unos minutos o escribe de forma directa a la Junta Directiva abajo.")
+            else:
+                st.error("⚠️ Los servidores de Google AI están procesando cambios en su red. Inténtalo de nuevo en breve.")
 
 st.write("---")
 
