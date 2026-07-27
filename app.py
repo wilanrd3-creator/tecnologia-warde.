@@ -75,13 +75,3 @@ with col_fund2:
 
 st.write("---")
 
-# 8. CHAT GLOBAL EN VIVO
-st.header("💬 Chat Global de la Comunidad")
-st.write("Habla en tiempo real con otros desarrolladores y clientes:")
-
-# Base de datos en memoria para probar en tu computadora
-if "mensajes_chat" not in st.session_state:
-    st.session_state.mensajes_chat = [
-        {"usuario": "Liam Muller", "texto": "¡Bienvenidos al chat oficial de la empresa! ⚡"},
-        {"usuario": "Wilan", "texto": "¡Hola a todos! Lanzamos Tecnología Warde de forma oficial 🚀"}
-    ]
