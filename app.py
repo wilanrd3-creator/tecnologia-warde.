@@ -41,16 +41,16 @@ st.header("📋 Nuestro Catálogo de Servicios")
 st.write("Haz clic en cada categoría para ver los detalles y precios oficiales:")
 
 with st.expander("🎥 MULTIMEDIA: Edición de Video & YouTube"):
-    st.write("⚡ **Edición de Videos Cortos:** Cortamos y optimizamos tus Reels, TikToks o Shorts con subtítulos dinámicos y música en tendencia. *(RD$ 250 - RD$ 400 por video)*")
+    st.write("⚡ **Edición de Videos Cortos:** Cortamos y optimizamos tus Reels, TikToks o Shorts con subtítulos dinámicos y música en tendencia. *(RD$ 100 - RD$ 150 por video)*")
     st.write("🎨 **Miniaturas de YouTube:** Diseños con alto porcentaje de clics para hacer crecer tu canal. *(RD$ 150 por diseño)*")
 
 with st.expander("💻 PROGRAMACIÓN: Desarrollo Web Avanzado"):
-    st.write("🔥 **Páginas Web con Python:** Creamos Landing Pages y aplicaciones web modernas utilizando código interactivo de última generación. *(RD$ 1,500 - RD$ 3,000)*")
-    st.write("🛠️ **Soporte & Configuración:** Estructuración de servidores de Discord profesionales con bots automáticos y roles. *(RD$ 500 - RD$ 1,000)*")
+    st.write("🔥 **Páginas Web en Python (Streamlit/Anvil):** Landing pages y sitios web modernos e interactivos para negocios. *(RD$ 700 - RD$ 1,000)*")
+    st.write("🛠️ **Configuración de Servidores de Discord:** Creación completa con canales ordenados, roles, seguridad anti-spam y bots. *(RD$ 300 - RD$ 400)*")
 
 with st.expander("🎨 DISEÑO GRÁFICO: Marca y Redes Sociales"):
-    st.write("📸 **Paquetes para Instagram/Facebook:** Diseños personalizados en Canva para que tu negocio local destaque de la competencia. *(RD$ 150 - RD$ 300)*")
-    st.write("✉️ **Invitaciones Digitales:** Tarjetas interactivas para eventos especiales listas para enviar por WhatsApp. *(RD$ 200)*")
+    st.write("📸 **Paquetes de Posts:** Imágenes publicitarias personalizadas para Facebook o Instagram. *(RD$ 150 - RD$ 300 por diseño)*")
+    st.write("✉️ **Invitaciones Digitales:** Tarjetas de cumpleaños o eventos listas para enviar por WhatsApp. *(RD$ 200 por diseño)*")
 
 with st.expander("🔗 Síguenos en Nuestras Redes Sociales"):
     st.write("👍 **Facebook:** [Tecnología Warde](https://www.facebook.com/profile.php?id=61591849505301)")
@@ -100,8 +100,19 @@ SYSTEM_PROMPT = (
     "Eres el asistente virtual oficial de 'Tecnología Warde', una empresa dominicana de servicios "
     "digitales (edición de video, diseño gráfico y desarrollo web). "
     "Responde siempre en español, de forma directa, profesional, amigable y en pocas líneas. "
-    "Si te preguntan precios, usa el catálogo mostrado en la página. "
-    "Si no sabes algo con certeza, dilo y sugiere contactar a la Junta Directiva por el formulario de abajo."
+    "Si no sabes algo con certeza, dilo y sugiere contactar a la Junta Directiva por el formulario de abajo.\n\n"
+    "LISTA DE PRECIOS OFICIALES (en Pesos Dominicanos RD$), úsala siempre que te pregunten precios:\n"
+    "MULTIMEDIA:\n"
+    "- Edición de Videos Cortos (TikTok/Reels/Shorts con subtítulos): RD$ 100 - RD$ 150 por video\n"
+    "- Miniaturas de YouTube: RD$ 150 por diseño\n"
+    "PROGRAMACIÓN:\n"
+    "- Páginas Web en Python (Streamlit/Anvil): RD$ 700 - RD$ 1,000\n"
+    "- Configuración de Servidores de Discord (canales, roles, anti-spam, bots): RD$ 300 - RD$ 400\n"
+    "DISEÑO GRÁFICO:\n"
+    "- Paquetes de Posts para Facebook/Instagram: RD$ 150 - RD$ 300 por diseño\n"
+    "- Invitaciones Digitales: RD$ 200 por diseño\n\n"
+    "MÉTODO DE PAGO: transferencia bancaria directa por Banco BHD (República Dominicana).\n"
+    "Toda contratación o presupuesto final debe coordinarse con el Administrador Ejecutivo de la empresa."
 )
 
 # Inicializamos el historial del chat en la sesión (se mantiene mientras el usuario navega)
