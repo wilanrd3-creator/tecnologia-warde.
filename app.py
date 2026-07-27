@@ -81,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA DE CONTROL DE ERRORES) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA entrenada para dar respuestas rápidas:")
 
@@ -94,12 +94,11 @@ pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dam
 
 if pregunta:
     if not HF_TOKEN:
-        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' in Streamlit Cloud para activarla por completo.")
+        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' en Streamlit Cloud para activarla por completo.")
         st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API en la nube, podré responderte cualquier duda en tiempo real.")
     else:
         st.write("⚡ *Consultando al cerebro de la IA...*")
         
-        # Servidor de IA alternativo ultra estable
         API_URL = "https://huggingface.co"
         headers = {"Authorization": f"Bearer {HF_TOKEN}"}
         
@@ -138,14 +137,9 @@ if pregunta:
 
 st.write("---")
 
-# 8. Formulario de Contacto Interactivo Automatizado (¡Nuevo Motor Web3Forms sin Verificación!)
+# 8. Formulario de Contacto Interactivo (¡ENVÍO DIRECTO DESDE PYTHON EN SEGUNDO PLANO!)
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
-
-# Dirección de entrega directa
-url_formulario = "https://web3forms.com"
-# Tu access key pública enrutada directo para wilanrd3@gmail.com
-access_key_web3 = "6ff8ba09-4bba-4e9b-9ccb-e9b3d0ee0276" 
 
 with st.form(key="formulario_contacto", clear_on_submit=True):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
@@ -172,19 +166,26 @@ with st.form(key="formulario_contacto", clear_on_submit=True):
         if nombre_cliente == "" or contacto_cliente == "" or servicio_seleccionado == "Selecciona una opción...":
             st.error("⚠️ Por favor, llena los campos obligatorios (Nombre, Contacto y Servicio).")
         else:
-            st.success("🎉 ¡Tu solicitud ha sido enviada con éxito directo a la central de Tecnología Warde!")
+            # Enviamos los datos directamente desde el código usando requests
+            payload_email = {
+                "access_key": "6ff8ba09-4bba-4e9b-9ccb-e9b3d0ee0276",
+                "from_name": "Tecnología Warde App",
+                "subject": f"🔥 Nueva Cotización de {nombre_cliente}",
+                "Nombre del Cliente": nombre_cliente,
+                "WhatsApp/Teléfono": contacto_cliente,
+                "Servicio Solicitado": servicio_seleccionado,
+                "Detalles del Proyecto": detalles_proyecto
+            }
             
-            # Ejecución nativa por debajo para enviar los datos limpios a tu correo
-            formulario_html = f"""
-            <form id='click_form' action='{url_formulario}' method='POST' target='_self'>
-                <input type='hidden' name='access_key' value='{access_key_web3}'>
-                <input type='hidden' name='Nombre' value='{nombre_cliente}'>
-                <input type='hidden' name='WhatsApp' value='{contacto_cliente}'>
-                <input type='hidden' name='Servicio' value='{servicio_seleccionado}'>
-                <input type='hidden' name='Detalles' value='{detalles_proyecto}'>
-                <input type='hidden' name='_redirect' value='https://streamlit.app'>
-            </form>
-            <script>document.getElementById('click_form').submit();</script>
-            """
-            st.markdown(formulario_html, unsafe_allow_html=True)
+            try:
+                envio = requests.post("https://web3forms.com", json=payload_email, timeout=10)
+                respuesta_envio = envio.json()
+                
+                if respuesta_envio.get("success"):
+                    st.success("🎉 ¡Tu solicitud ha sido enviada con éxito! Revisa tu correo wilanrd3@gmail.com en los próximos minutos.")
+                else:
+                    st.error("⚠️ El servidor de correos rechazó el envío. Verifica tu conexión.")
+            except Exception as e:
+                st.error("⚠️ Hubo un problema de conexión al enviar el correo. Intenta de nuevo.")
+
 
