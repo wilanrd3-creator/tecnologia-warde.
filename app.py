@@ -79,8 +79,8 @@ with col_fund1:
     st.markdown("> **Rol:** *Visión de negocio y desarrollo. Prefiere mantener su identidad reservada.* 🕵️")
 
 with col_fund2:
-    st.markdown("### 👨‍💻 Fundador 2")
-    st.caption("🔒 *Estatus: Identidad Protegida*")
+    st.markdown("### 👨‍💻 Fundador 2: Liam muller")
+    st.caption("🔒 *Estatus: Activo*")
     st.markdown("> **Rol:** *Desarrollador de Sistemas, Co-Fundador y Especialista en Optimización Tecnológica.* 🛠️")
 
 with col_fund3:
