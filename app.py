@@ -80,7 +80,7 @@ with col_fund1:
 
 with col_fund2:
     st.markdown("### 👨‍💻 Fundador 2: Liam muller")
-    st.caption("🔒 *Estatus: Activo*")
+    st.caption("⚡ *Estatus: Activo*")
     st.markdown("> **Rol:** *Desarrollador de Sistemas, Co-Fundador y Especialista en Optimización Tecnológica.* 🛠️")
 
 with col_fund3:
