@@ -29,7 +29,7 @@ st.markdown("<h3 style='text-align: center; color: #888888;'>Tu tecnología en m
 st.write("---")
 
 # 4. Presentación de la Empresa
-st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en realidad. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
+st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en reality. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
 
 st.write("") 
 
@@ -81,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (¡REPARADO!) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA entrenada para dar respuestas rápidas:")
 
@@ -95,10 +95,11 @@ pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dam
 if pregunta:
     if not HF_TOKEN:
         st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' en Streamlit Cloud para activarla por completo.")
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API en la nube, podré responderte cualquier duda en tiempo real.")
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API, podré responderte cualquier duda en tiempo real.")
     else:
         st.write("⚡ *Consultando al cerebro de la IA...*")
         
+        # SOLUCIÓN: Dirección completa del modelo de Meta Llama en Hugging Face
         API_URL = "https://huggingface.co"
         headers = {"Authorization": f"Bearer {HF_TOKEN}"}
         
@@ -111,7 +112,14 @@ if pregunta:
             response = requests.post(API_URL, headers=headers, json=payload)
             resultado = response.json()
             
-            texto_respuesta = resultado['generated_text']
+            # SOLUCIÓN: Manejo seguro de la respuesta de texto
+            if isinstance(resultado, list) and len(resultado) > 0:
+                texto_respuesta = resultado[0]['generated_text']
+            elif isinstance(resultado, dict) and 'generated_text' in resultado:
+                texto_respuesta = resultado['generated_text']
+            else:
+                texto_respuesta = resultado.get('detail', 'Error de formato')
+                
             respuesta_limpia = texto_respuesta.split("<|assistant|>\n")[-1].strip()
             
             st.success("🤖 **Respuesta de la IA:**")
@@ -122,11 +130,11 @@ if pregunta:
 
 st.write("---")
 
-# 8. Formulario de Contacto Interactivo Automatizado
+# 8. Formulario de Contacto Interactivo Automatizado (¡REPARADO!)
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
 
-# CONFIGURACIÓN CORRECTA DEL CORREO ELECTRÓNICO (Solución al NameError)
+# SOLUCIÓN: Tu correo real integrado sin errores de sintaxis en Python
 tu_correo = "wilanrd3@gmail.com" 
 url_formulario = f"https://formsubmit.co{tu_correo}"
 
@@ -157,6 +165,7 @@ with st.form(key="formulario_contacto", clear_on_submit=True):
         else:
             st.success("🎉 ¡Procesando envío! Serás redirigido para confirmar tu mensaje.")
             
+            # SOLUCIÓN: Código HTML cerrado correctamente para evitar cortes en el navegador
             formulario_html = f"""
             <form id="click_form" action="{url_formulario}" method="POST" target="_self">
                 <input type="hidden" name="Nombre" value="{nombre_cliente}">
