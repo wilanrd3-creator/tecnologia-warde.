@@ -81,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (LIBRERÍA OFICIAL GOOGLE 24/7 ACTUALIZADA) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (LIBRERÍA OFICIAL GOOGLE CON MODELO REPARADO) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
@@ -100,7 +100,7 @@ if pregunta:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
         try:
-            # Limpiamos comillas accidentales que queden guardadas en el panel
+            # Limpiamos comillas accidentales del panel
             clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
             
             # Inicializamos el cliente oficial de Google
@@ -112,9 +112,9 @@ if pregunta:
                 f"Pregunta del cliente: {pregunta}"
             )
             
-            # SOLUCIÓN: Cambiado el nombre del modelo a 'gemini-2.5-flash' para resolver el error 404
+            # SOLUCIÓN: Cambiado el nombre al modelo global actualizable que no genera error 404
             response = client.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-2.0-flash',
                 contents=contexto_empresa,
             )
             
@@ -167,4 +167,3 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
     st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
-
