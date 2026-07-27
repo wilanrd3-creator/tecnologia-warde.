@@ -1,11 +1,11 @@
 import streamlit as st
 import urllib.parse
 
-# Intentamos importar la librería oficial de Google AI
+# Intentamos importar la librería oficial de Groq
 try:
-    from google import genai
+    from groq import Groq
 except ImportError:
-    st.error("⚠️ Falta instalar la librería de Google. Asegúrate de añadir 'google-genai' en tu archivo requirements.txt de GitHub.")
+    st.error("⚠️ Falta instalar la librería de Groq. Asegúrate de añadir 'groq' en tu archivo requirements.txt de GitHub.")
     st.stop()
 
 # 1. Configuración de pestaña con título y logo futurista
@@ -86,7 +86,7 @@ st.write("---")
 st.header("🤖 Chat IA Warde — Disponible 24/7")
 st.write("Nuestro asistente virtual está activo a toda hora, incluso cuando el equipo humano no está conectado:")
 
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
 
 SYSTEM_PROMPT = (
     "Eres el asistente virtual oficial de 'Tecnología Warde', una empresa dominicana de servicios "
@@ -114,37 +114,37 @@ if pregunta:
         st.write(pregunta)
 
     with st.chat_message("assistant"):
-        if not GEMINI_API_KEY:
+        if not GROQ_API_KEY:
             respuesta = (
                 "👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Estoy en modo de demostración "
-                "porque aún no se ha configurado la clave 'GEMINI_API_KEY' en Streamlit Cloud. "
+                "porque aún no se ha configurado la clave 'GROQ_API_KEY' en Streamlit Cloud. "
                 "Mientras tanto, puedes revisar el catálogo arriba o escribirnos por el formulario de contacto."
             )
             st.write(respuesta)
         else:
             with st.spinner("⚡ Pensando..."):
                 try:
-                    clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
-                    client = genai.Client(api_key=clave_limpia)
+                    clave_limpia = str(GROQ_API_KEY).replace('"', '').replace("'", "").strip()
+                    client = Groq(api_key=clave_limpia)
 
-                    # Construimos el historial en el formato que espera la API,
+                    # Construimos el historial en el formato que espera la API de Groq (estilo OpenAI),
                     # para que la IA recuerde el contexto de la conversación
-                    contenidos = [SYSTEM_PROMPT]
+                    mensajes = [{"role": "system", "content": SYSTEM_PROMPT}]
                     for autor_previo, texto_previo in st.session_state.chat_historial[:-1]:
-                        prefijo = "Cliente" if autor_previo == "user" else "Asistente"
-                        contenidos.append(f"{prefijo}: {texto_previo}")
-                    contenidos.append(f"Cliente: {pregunta}")
+                        rol = "user" if autor_previo == "user" else "assistant"
+                        mensajes.append({"role": rol, "content": texto_previo})
+                    mensajes.append({"role": "user", "content": pregunta})
 
-                    response = client.models.generate_content(
-                        model='gemini-2.0-flash',
-                        contents="\n".join(contenidos),
+                    response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=mensajes,
                     )
 
-                    respuesta = response.text
+                    respuesta = response.choices[0].message.content
 
                 except Exception as e:
                     error_str = str(e)
-                    if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                    if "429" in error_str or "rate_limit" in error_str.lower():
                         respuesta = (
                             "⏳ He procesado muchas preguntas en las últimas horas y estoy descansando "
                             "temporalmente. Intenta de nuevo en unos minutos o escribe directamente a la "
@@ -152,9 +152,12 @@ if pregunta:
                         )
                     else:
                         respuesta = (
-                            "⚠️ Los servidores de Google AI están procesando cambios en su red. "
+                            "⚠️ Los servidores de Groq están procesando cambios en su red. "
                             "Inténtalo de nuevo en breve."
                         )
+                    # 🔧 MODO DIAGNÓSTICO TEMPORAL: muestra el error real para depurar.
+                    # Bórralo cuando confirmes que todo funciona bien.
+                    st.caption(f"🔧 Detalle técnico (borrar luego): {error_str}")
 
                 st.write(respuesta)
 
