@@ -100,8 +100,11 @@ if pregunta:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
         try:
+            # CORRECCIÓN DE SEGURIDAD: Limpiamos comillas accidentales en el servidor
+            clave_limpia = str(GEMINI_API_KEY).replace('"', '').replace("'", "").strip()
+            
             # Inicializamos el cliente oficial de Google usando tu clave segura
-            client = genai.Client(api_key=GEMINI_API_KEY)
+            client = genai.Client(api_key=clave_limpia)
             
             contexto_empresa = (
                 "Eres un asistente tecnológico experto, ingenioso y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
@@ -120,7 +123,8 @@ if pregunta:
             st.write(response.text)
             
         except Exception as e:
-            st.error("⚠️ Ocurrió un inconveniente con los servidores de Google AI. Inténtalo de nuevo en unos segundos.")
+            # Si hay un error, mostramos el error técnico exacto para saber qué corregir
+            st.error(f"⚠️ Ocurrió un inconveniente con los servidores de Google AI. Detalles del error: {str(e)}")
 
 st.write("---")
 
@@ -164,4 +168,3 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
     st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
 else:
     st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
-
