@@ -76,7 +76,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (GEMINI 24/7 ACTUALIZADO) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (GEMINI 24/7 ULTRAESTABLE) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
@@ -94,34 +94,42 @@ if pregunta:
     else:
         st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
-        # Conexión adaptada al nuevo sistema de autenticación Bearer de Google AI Studio
-        url_gemini = "https://googleapis.com"
-        headers = {"Authorization": f"Bearer {GEMINI_API_KEY}", "Content-Type": "application/json"}
+        # Enlace directo unificado para la API de Gemini 1.5 Flash
+        url_gemini = f"https://googleapis.com{GEMINI_API_KEY}"
+        headers = {"Content-Type": "application/json"}
         
         contexto_empresa = (
-            "Eres un asistente tecnológico experto y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
-            "Responde de forma corta, directa y siempre en español. "
+            "Eres un asistente tecnológico experto, ingenioso y amigable para la empresa 'Tecnología Warde' de República Dominicana. "
+            "Responde siempre en español, de forma clara, directa y en pocas líneas. "
             f"Pregunta del cliente: {pregunta}"
         )
         
         payload = {
-            "contents": [{"parts": [{"text": contexto_empresa}]}]
+            "contents": [{
+                "parts": [{"text": contexto_empresa}]
+            }]
         }
         
         try:
             response = requests.post(url_gemini, headers=headers, json=payload, timeout=10)
             resultado = response.json()
             
-            # Extracción segura de la respuesta de texto de Google
+            # Extracción limpia del texto según la estructura JSON nativa de Google
             if 'candidates' in resultado and len(resultado['candidates']) > 0:
-                respuesta_ia = resultado['candidates'][0]['content']['parts'][0]['text']
-                st.success("🤖 **Respuesta de la IA:**")
-                st.write(respuesta_ia)
+                candidato = resultado['candidates'][0]
+                if 'content' in candidato and 'parts' in candidato['content'] and len(candidato['content']['parts']) > 0:
+                    respuesta_ia = candidato['content']['parts'][0]['text']
+                    st.success("🤖 **Respuesta de la IA:**")
+                    st.write(respuesta_ia)
+                else:
+                    st.error("⚠️ La IA no devolvió texto. Inténtalo con otra pregunta.")
+            elif 'error' in resultado:
+                st.error(f"❌ Error de Google Studio: {resultado['error'].get('message', 'Clave inválida')}")
             else:
-                st.error("⚠️ La clave de API no tiene los permisos activos todavía en Google Studio o el formato falló.")
+                st.error("⚠️ Respuesta inesperada del servidor de Google.")
             
         except Exception as e:
-            st.error("⚠️ Hubo un problema de formato al conectar con Google AI. Inténtalo de nuevo.")
+            st.error("⚠️ Error interno al procesar los datos de la IA.")
 
 st.write("---")
 
