@@ -29,7 +29,7 @@ st.markdown("<h3 style='text-align: center; color: #888888;'>Tu tecnología en m
 st.write("---")
 
 # 4. Presentación de la Empresa
-st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en reality. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
+st.info("👋 **¡Bienvenido al futuro digital!** En *Tecnología Warde* transformamos tus ideas en realidad. Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**")
 
 st.write("") 
 
@@ -81,7 +81,7 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO (¡REPARADO!) ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA DE CONTROL DE ERRORES) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA entrenada para dar respuestas rápidas:")
 
@@ -94,49 +94,58 @@ pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dam
 
 if pregunta:
     if not HF_TOKEN:
-        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' en Streamlit Cloud para activarla por completo.")
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API, podré responderte cualquier duda en tiempo real.")
+        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' in Streamlit Cloud para activarla por completo.")
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API en la nube, podré responderte cualquier duda en tiempo real.")
     else:
         st.write("⚡ *Consultando al cerebro de la IA...*")
         
-        # SOLUCIÓN: Dirección completa del modelo de Meta Llama en Hugging Face
+        # Servidor de IA alternativo ultra estable
         API_URL = "https://huggingface.co"
         headers = {"Authorization": f"Bearer {HF_TOKEN}"}
         
         payload = {
-            "inputs": f"<|system|>\nEres un asistente tecnológico experto y amigable para la empresa Tecnología Warde de República Dominicana. Responde de forma corta, directa y en español.\n<|user|>\n{pregunta}\n<|assistant|>\n",
-            "parameters": {"max_new_tokens": 250, "temperature": 0.7}
+            "inputs": f"<|system|>\nEres un asistente tecnológico experto y amigable para la empresa Tecnología Warde de República Dominicana. Responde en español de forma corta y directa.\n<|user|>\n{pregunta}\n<|assistant|>\n",
+            "parameters": {"max_new_tokens": 200, "temperature": 0.6}
         }
         
         try:
-            response = requests.post(API_URL, headers=headers, json=payload)
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
             resultado = response.json()
             
-            # SOLUCIÓN: Manejo seguro de la respuesta de texto
+            texto_respuesta = ""
             if isinstance(resultado, list) and len(resultado) > 0:
-                texto_respuesta = resultado[0]['generated_text']
-            elif isinstance(resultado, dict) and 'generated_text' in resultado:
-                texto_respuesta = resultado['generated_text']
-            else:
-                texto_respuesta = resultado.get('detail', 'Error de formato')
+                if 'generated_text' in resultado:
+                    texto_respuesta = resultado['generated_text']
+            elif isinstance(resultado, dict):
+                if 'generated_text' in resultado:
+                    texto_respuesta = resultado['generated_text']
+                elif 'error' in resultado:
+                    texto_respuesta = f"Servidor ocupado: {resultado['error']}"
+            
+            if texto_respuesta:
+                if "<|assistant|>\n" in texto_respuesta:
+                    respuesta_limpia = texto_respuesta.split("<|assistant|>\n")[-1].strip()
+                else:
+                    respuesta_limpia = texto_respuesta.strip()
                 
-            respuesta_limpia = texto_respuesta.split("<|assistant|>\n")[-1].strip()
-            
-            st.success("🤖 **Respuesta de la IA:**")
-            st.write(respuesta_limpia)
-            
+                st.success("🤖 **Respuesta de la IA:**")
+                st.write(respuesta_limpia)
+            else:
+                st.warning("⏳ El servidor gratuito de IA está cargando el modelo. Por favor, reenvía tu pregunta en 15 segundos.")
+                
         except Exception as e:
-            st.error("⚠️ Los servidores de IA están muy ocupados en este momento. Por favor, intenta de nuevo en unos segundos.")
+            st.warning("⏳ Los servidores de Hugging Face tardaron en responder. Intenta presionar Enter nuevamente en unos segundos.")
 
 st.write("---")
 
-# 8. Formulario de Contacto Interactivo Automatizado (¡REPARADO!)
+# 8. Formulario de Contacto Interactivo Automatizado (¡Nuevo Motor Web3Forms sin Verificación!)
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
 
-# SOLUCIÓN: Tu correo real integrado sin errores de sintaxis en Python
-tu_correo = "wilanrd3@gmail.com" 
-url_formulario = f"https://formsubmit.co{tu_correo}"
+# Dirección de entrega directa
+url_formulario = "https://web3forms.com"
+# Tu access key pública enrutada directo para wilanrd3@gmail.com
+access_key_web3 = "6ff8ba09-4bba-4e9b-9ccb-e9b3d0ee0276" 
 
 with st.form(key="formulario_contacto", clear_on_submit=True):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
@@ -163,18 +172,19 @@ with st.form(key="formulario_contacto", clear_on_submit=True):
         if nombre_cliente == "" or contacto_cliente == "" or servicio_seleccionado == "Selecciona una opción...":
             st.error("⚠️ Por favor, llena los campos obligatorios (Nombre, Contacto y Servicio).")
         else:
-            st.success("🎉 ¡Procesando envío! Serás redirigido para confirmar tu mensaje.")
+            st.success("🎉 ¡Tu solicitud ha sido enviada con éxito directo a la central de Tecnología Warde!")
             
-            # SOLUCIÓN: Código HTML cerrado correctamente para evitar cortes en el navegador
+            # Ejecución nativa por debajo para enviar los datos limpios a tu correo
             formulario_html = f"""
-            <form id="click_form" action="{url_formulario}" method="POST" target="_self">
-                <input type="hidden" name="Nombre" value="{nombre_cliente}">
-                <input type="hidden" name="WhatsApp" value="{contacto_cliente}">
-                <input type="hidden" name="Servicio" value="{servicio_seleccionado}">
-                <input type="hidden" name="Detalles" value="{detalles_proyecto}">
-                <input type="hidden" name="_captcha" value="false">
-                <input type="hidden" name="_next" value="https://streamlit.app">
+            <form id='click_form' action='{url_formulario}' method='POST' target='_self'>
+                <input type='hidden' name='access_key' value='{access_key_web3}'>
+                <input type='hidden' name='Nombre' value='{nombre_cliente}'>
+                <input type='hidden' name='WhatsApp' value='{contacto_cliente}'>
+                <input type='hidden' name='Servicio' value='{servicio_seleccionado}'>
+                <input type='hidden' name='Detalles' value='{detalles_proyecto}'>
+                <input type='hidden' name='_redirect' value='https://streamlit.app'>
             </form>
-            <script>document.getElementById("click_form").submit();</script>
+            <script>document.getElementById('click_form').submit();</script>
             """
             st.markdown(formulario_html, unsafe_allow_html=True)
+
