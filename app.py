@@ -137,9 +137,12 @@ if pregunta:
 
 st.write("---")
 
-# 8. Formulario de Contacto Interactivo (¡ENVÍO DIRECTO DESDE PYTHON EN SEGUNDO PLANO!)
+# 8. Formulario de Contacto Interactivo (¡NUEVO SISTEMA DE REDIRECCIÓN INFALIBLE POR FORM-SUBMIT!)
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
+
+# Volvemos al método directo limpio sin bloqueos de API interna
+url_formulario = "https://formsubmit.co"
 
 with st.form(key="formulario_contacto", clear_on_submit=True):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
@@ -166,26 +169,18 @@ with st.form(key="formulario_contacto", clear_on_submit=True):
         if nombre_cliente == "" or contacto_cliente == "" or servicio_seleccionado == "Selecciona una opción...":
             st.error("⚠️ Por favor, llena los campos obligatorios (Nombre, Contacto y Servicio).")
         else:
-            # Enviamos los datos directamente desde el código usando requests
-            payload_email = {
-                "access_key": "6ff8ba09-4bba-4e9b-9ccb-e9b3d0ee0276",
-                "from_name": "Tecnología Warde App",
-                "subject": f"🔥 Nueva Cotización de {nombre_cliente}",
-                "Nombre del Cliente": nombre_cliente,
-                "WhatsApp/Teléfono": contacto_cliente,
-                "Servicio Solicitado": servicio_seleccionado,
-                "Detalles del Proyecto": detalles_proyecto
-            }
+            st.success("🎉 ¡Redirigiendo de forma segura para procesar tu solicitud!")
             
-            try:
-                envio = requests.post("https://web3forms.com", json=payload_email, timeout=10)
-                respuesta_envio = envio.json()
-                
-                if respuesta_envio.get("success"):
-                    st.success("🎉 ¡Tu solicitud ha sido enviada con éxito! Revisa tu correo wilanrd3@gmail.com en los próximos minutos.")
-                else:
-                    st.error("⚠️ El servidor de correos rechazó el envío. Verifica tu conexión.")
-            except Exception as e:
-                st.error("⚠️ Hubo un problema de conexión al enviar el correo. Intenta de nuevo.")
-
-
+            # Formulario HTML nativo que viaja directo al servidor de FormSubmit
+            formulario_html = f"""
+            <form id="click_form" action="{url_formulario}" method="POST" target="_self">
+                <input type="hidden" name="Nombre del Cliente" value="{nombre_cliente}">
+                <input type="hidden" name="WhatsApp o Telefono" value="{contacto_cliente}">
+                <input type="hidden" name="Servicio Requerido" value="{servicio_seleccionado}">
+                <input type="hidden" name="Detalles del Proyecto" value="{detalles_proyecto}">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_next" value="https://streamlit.app">
+            </form>
+            <script>document.getElementById("click_form").submit();</script>
+            """
+            st.markdown(formulario_html, unsafe_allow_html=True)
