@@ -1,4 +1,5 @@
 import streamlit as st
+import requests
 
 # 1. Configuración de pestaña con título y logo futurista
 st.set_page_config(page_title="Tecnología Warde | Oficial", page_icon="⚡", layout="centered")
@@ -80,6 +81,51 @@ with col_fund3:
 
 st.write("---")
 
+# === NUEVA SECCIÓN: CONSULTOR DE IA INTEGRADO ===
+st.header("🤖 Consultor de Inteligencia Artificial Warde")
+st.write("Pregúntale lo que quieras a nuestra IA entrenada para dar respuestas rápidas:")
+
+# Intentamos sacar la clave secreta de la configuración de Streamlit Cloud
+try:
+    HF_TOKEN = st.secrets["HF_TOKEN"]
+except Exception:
+    HF_TOKEN = None
+
+pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dame una idea para un video de YouTube...")
+
+if pregunta:
+    if not HF_TOKEN:
+        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' en Streamlit Cloud para activarla por completo.")
+        # Respuesta simulada por si no ha configurado la clave todavía
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API, podré responderte cualquier duda en tiempo real.")
+    else:
+        st.write("⚡ *Consultando al cerebro de la IA...*")
+        
+        # Conexión directa a los servidores de Hugging Face
+        API_URL = "https://huggingface.co"
+        headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+        
+        payload = {
+            "inputs": f"<|system|>\nEres un asistente tecnológico experto y amigable para la empresa Tecnología Warde de República Dominicana. Responde de forma corta, directa y en español.\n<|user|>\n{pregunta}\n<|assistant|>\n",
+            "parameters": {"max_new_tokens": 250, "temperature": 0.7}
+        }
+        
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload)
+            resultado = response.json()
+            
+            # Limpiamos el texto que devuelve el modelo de IA
+            texto_respuesta = resultado[0]['generated_text']
+            respuesta_limpia = texto_respuesta.split("<|assistant|>\n")[-1].strip()
+            
+            st.success("🤖 **Respuesta de la IA:**")
+            st.write(respuesta_limpia)
+            
+        except Exception as e:
+            st.error("⚠️ Los servidores de IA están muy ocupados en este momento. Por favor, intenta de nuevo en unos segundos.")
+
+st.write("---")
+
 # 8. Formulario de Contacto Interactivo Automatizado
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
@@ -87,7 +133,7 @@ st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
 # CAMBIA ESTE CORREO POR EL TUYO REAL PARA RECIBIR LOS MENSAJES DE TUS CLIENTES
 tu_correo = "wilan@ejemplo.com" 
 
-url_formulario = f"https://formsubmit.co{tu_correo}"
+url_formulario = f"https://formsubmit.co{wilanrd3@gmail.com}"
 
 with st.form(key="formulario_contacto", clear_on_submit=True):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
@@ -116,7 +162,6 @@ with st.form(key="formulario_contacto", clear_on_submit=True):
         else:
             st.success("🎉 ¡Procesando envío! Serás redirigido para confirmar tu mensaje.")
             
-            # Formulario oculto que se ejecuta en segundo plano para enviar la información a FormSubmit
             formulario_html = f"""
             <form id="click_form" action="{url_formulario}" method="POST" target="_self">
                 <input type="hidden" name="Nombre" value="{nombre_cliente}">
