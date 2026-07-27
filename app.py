@@ -73,5 +73,9 @@ with col_fund2:
     st.caption("⚡ *Estatus: Activo*")
     st.markdown("> **Rol:** *Desarrollador de Sistemas, Co-Fundador y Especialista en Optimización Tecnológica.* 🛠️")
 
-st.write("---")
+with col_fund3:
+    st.markdown("### 👨‍💻 Fundador 3: Dawel Sonyis")
+    st.caption("⚡ *Estatus: Activo*")
+    st.markdown("> **Rol:** *Administrador ejecutivo, Lider de las aciones y jefe del departamento de recursos humano.* 🛠️")
+
 
