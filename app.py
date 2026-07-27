@@ -13,12 +13,6 @@ st.markdown(
     .stApp {
         background-color: #0F111A;
     }
-    /* Estilo limpio para el botón de enviar sin romper el diseño */
-    button[kind="primaryFormSubmit"], button[data-testid="stFormSubmitButton"] {
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        width: 100% !important;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -56,7 +50,7 @@ st.write("---")
 # 6. Pasarela de Pagos Segura
 st.header("💳 Métodos de Pago")
 st.success("🔒 **Transacciones Seguras vía Banco BHD:** Procesamos todos nuestros cobros de forma directa y transparente mediante transferencias bancarias dominicanas.")
-st.warning("⚠️ **Aviso de Seguridad:** Toda contratación, presupuesto o detalle financiero debe ser coordinated bajo la supervisión directa de nuestros padres o tutores legales.")
+st.warning("⚠️ **Aviso de Seguridad:** Toda contratación, presupuesto o detalle financiero debe ser coordinado bajo la supervisión directa de nuestros padres o tutores legales.")
 
 st.write("---")
 
@@ -82,115 +76,91 @@ with col_fund3:
 
 st.write("---")
 
-# === SECCIÓN: CONSULTOR DE IA INTEGRADO ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO (SISTEMA GEMINI 24/7 ULTRARRÁPIDO) ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
-st.write("Pregúntale lo que quieras a nuestra IA entrenada para dar respuestas rápidas:")
+st.write("Pregúntale lo que quieras a nuestra IA de Google, activa y lista las 24 horas del día:")
 
+# Buscamos la clave segura de Google Gemini
 try:
-    HF_TOKEN = st.secrets["HF_TOKEN"]
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    HF_TOKEN = None
+    GEMINI_API_KEY = None
 
 pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dame una idea para un video de YouTube...")
 
 if pregunta:
-    if not HF_TOKEN:
-        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' en Streamlit Cloud para activarla por completo.")
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API en la nube, podré responderte cualquier duda en tiempo real.")
+    if not GEMINI_API_KEY:
+        st.warning("⚙️ La IA está en modo de demostración. Configura tu 'GEMINI_API_KEY' en Streamlit Cloud para activarla de forma permanente.")
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave de Google, podré responderte al instante las 24/7.")
     else:
-        st.write("⚡ *Consultando al cerebro de la IA...*")
+        st.write("⚡ *Consultando al cerebro de Google Gemini...*")
         
-        API_URL = "https://huggingface.co"
-        headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+        # Conexión directa y veloz a la API oficial de Google AI
+        url_gemini = f"https://googleapis.com{GEMINI_API_KEY}"
+        
+        contexto_empresa = (
+            "Eres un asistente tecnológico experto, amigable y profesional para la empresa 'Tecnología Warde' de República Dominicana. "
+            "Responde de forma concisa, amena y siempre en español dominicano o estándar neutro. "
+            f"Pregunta del usuario: {pregunta}"
+        )
         
         payload = {
-            "inputs": f"<|system|>\nEres un asistente tecnológico experto y amigable para la empresa Tecnología Warde de República Dominicana. Responde en español de forma corta y directa.\n<|user|>\n{pregunta}\n<|assistant|>\n",
-            "parameters": {"max_new_tokens": 200, "temperature": 0.6}
+            "contents": [{"parts": [{"text": contexto_empresa}]}]
         }
         
         try:
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
+            response = requests.post(url_gemini, json=payload, timeout=10)
             resultado = response.json()
             
-            texto_respuesta = ""
-            if isinstance(resultado, list) and len(resultado) > 0:
-                if 'generated_text' in pointer: # Corrección de estructura general
-                    texto_respuesta = resultado[0]['generated_text']
-            elif isinstance(resultado, dict):
-                if 'generated_text' in resultado:
-                    texto_respuesta = resultado['generated_text']
-                elif 'error' in resultado:
-                    texto_respuesta = f"Servidor ocupado: {resultado['error']}"
+            # Extracción limpia del texto del formato oficial de Google
+            respuesta_ia = resultado['candidates'][0]['content']['parts'][0]['text']
             
-            if texto_respuesta:
-                if "<|assistant|>\n" in texto_respuesta:
-                    respuesta_limpia = texto_respuesta.split("<|assistant|>\n")[-1].strip()
-                else:
-                    respuesta_limpia = texto_respuesta.strip()
-                
-                st.success("🤖 **Respuesta de la IA:**")
-                st.write(respuesta_limpia)
-            else:
-                st.warning("⏳ El servidor gratuito de IA está cargando el modelo. Por favor, reenvía tu pregunta en 15 segundos.")
-                
+            st.success("🤖 **Respuesta de la IA:**")
+            st.write(respuesta_ia)
+            
         except Exception as e:
-            st.warning("⏳ Los servidores de Hugging Face tardaron en responder. Intenta presionar Enter nuevamente en unos segundos.")
+            st.error("⚠️ Hubo un problema al procesar la solicitud con Google AI. Inténtalo de nuevo en unos segundos.")
 
 st.write("---")
 
-# 8. Formulario de Contacto Interactivo (¡NUEVO SISTEMA AUTOMÁTICO VÍA WHATSAPP!)
+# 8. Formulario de Contacto Interactivo (SISTEMA SEGURO POR WHATSAPP)
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
-st.write("Completa tus datos para enviarnos la información directamente a nuestro canal oficial:")
+st.write("Completa tus datos para generar tu orden de servicio:")
 
-# TU NÚMERO DE TELÉFONO DE WHATSAPP CON CÓDIGO DE PAÍS (Ej. 1 para RD + tu número sin guiones)
-# CAMBIA ESTE NÚMERO POR EL TUYO REAL (Ejemplo actual: +1 809-555-1234 -> "18095551234")
-telefono_warde = "18094523054" 
+# Cambia este número por tu WhatsApp real si es necesario (ej: "18298751503")
+telefono_warde = "18298751503" 
 
-with st.form(key="formulario_contacto", clear_on_submit=False):
-    nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
-    contacto_cliente = st.text_input("📱 Tu Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
-    
-    servicio_seleccionado = st.selectbox(
-        "🛠️ ¿Qué servicio necesitas?",
-        [
-            "Selecciona una opción...",
-            "MULTIMEDIA: Edición de Video Corto",
-            "MULTIMEDIA: Miniatura de YouTube",
-            "PROGRAMACIÓN: Página Web con Python",
-            "PROGRAMACIÓN: Soporte / Servidor de Discord",
-            "DISEÑO: Paquete para Redes Sociales",
-            "DISEÑO: Invitación Digital"
-        ]
+nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
+contacto_cliente = st.text_input("📱 Tu Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
+
+servicio_seleccionado = st.selectbox(
+    "🛠️ ¿Qué servicio necesitas?",
+    [
+        "Selecciona una opción...",
+        "MULTIMEDIA: Edición de Video Corto",
+        "MULTIMEDIA: Miniatura de YouTube",
+        "PROGRAMACIÓN: Página Web con Python",
+        "PROGRAMACIÓN: Soporte / Servidor de Discord",
+        "DISEÑO: Paquete para Redes Sociales",
+        "DISEÑO: Invitación Digital"
+    ]
+)
+
+detalles_proyecto = st.text_area("✏️ Cuéntanos más detalles sobre tu idea", placeholder="Escribe aquí lo que necesitas...")
+
+if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona una opción...":
+    mensaje_texto = (
+        f"🚀 *NUEVA SOLICITUD - TECNOLOGÍA WARDE*\n\n"
+        f"👤 *Cliente:* {nombre_cliente}\n"
+        f"📱 *Contacto:* {contacto_cliente}\n"
+        f"🛠️ *Servicio:* {servicio_seleccionado}\n"
+        f"✏️ *Detalles:* {detalles_proyecto}"
     )
     
-    detalles_proyecto = st.text_area("✏️ Cuéntanos más detalles sobre tu idea", placeholder="Escribe aquí lo que necesitas...")
+    mensaje_codificado = urllib.parse.quote(mensaje_texto)
+    enlace_whatsapp = f"https://wa.me{telefono_warde}?text={mensaje_codificado}"
     
-    boton_enviar = st.form_submit_button(label="🚀 Generar Mensaje de Cotización", type="primary")
-
-    if boton_enviar:
-        if nombre_cliente == "" or contacto_cliente == "" or servicio_seleccionado == "Selecciona una opción...":
-            st.error("⚠️ Por favor, llena los campos obligatorios (Nombre, Contacto y Servicio).")
-        else:
-            # Estructuramos el mensaje de texto limpio para WhatsApp
-            mensaje_texto = (
-                f"🚀 *NUEVA SOLICITUD - TECNOLOGÍA WARDE*\n\n"
-                f"👤 *Cliente:* {nombre_cliente}\n"
-                f"📱 *Contacto:* {contacto_cliente}\n"
-                f"🛠️ *Servicio:* {servicio_seleccionado}\n"
-                f"✏️ *Detalles del Proyecto:* {detalles_proyecto}"
-            )
-            
-            # Codificamos el texto para que sea una URL segura
-            mensaje_codificado = urllib.parse.quote(mensaje_texto)
-            enlace_whatsapp = f"https://wa.me{telefono_warde}?text={mensaje_codificado}"
-            
-            st.success("🎉 ¡Información empaquetada con éxito!")
-            
-            # Redirección automática instantánea mediante JavaScript nativo
-            js_redireccion = f"""
-            <script>
-                window.open("{enlace_whatsapp}", "_blank");
-            </script>
-            """
-            st.markdown(js_redireccion, unsafe_allow_html=True)
-            st.info("💡 Si tu navegador bloqueó la ventana emergente, haz [clic aquí para abrir el chat de WhatsApp]({})".format(enlace_whatsapp))
+    st.write("")
+    st.link_button("🚀 Enviar orden por WhatsApp", enlace_whatsapp, type="primary", use_container_width=True)
+else:
+    st.info("💡 Completa los campos de arriba (Nombre, Teléfono y Servicio) para habilitar el botón de envío por WhatsApp.")
