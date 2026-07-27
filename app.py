@@ -1,5 +1,7 @@
 import streamlit as st
 import urllib.parse
+import sqlite3
+from datetime import datetime
 
 # Intentamos importar la librería oficial de Groq
 try:
@@ -71,8 +73,8 @@ with col_fund1:
     st.markdown("> **Rol:** *Visión de negocio y desarrollo. Prefiere mantener su identidad reservada.* 🕵️")
 
 with col_fund2:
-    st.markdown("### 👨‍💻 Fundador 2: Liam Muller")
-    st.caption("⚡ *Estatus: Activo*")
+    st.markdown("### 👨‍💻 Fundador 2")
+    st.caption("🔒 *Estatus: Identidad Protegida*")
     st.markdown("> **Rol:** *Desarrollador de Sistemas, Co-Fundador y Especialista en Optimización Tecnológica.* 🛠️")
 
 with col_fund3:
@@ -155,9 +157,6 @@ if pregunta:
                             "⚠️ Los servidores de Groq están procesando cambios en su red. "
                             "Inténtalo de nuevo en breve."
                         )
-                    # 🔧 MODO DIAGNÓSTICO TEMPORAL: muestra el error real para depurar.
-                    # Bórralo cuando confirmes que todo funciona bien.
-                    st.caption(f"🔧 Detalle técnico (borrar luego): {error_str}")
 
                 st.write(respuesta)
 
@@ -167,6 +166,119 @@ if st.session_state.chat_historial:
     if st.button("🗑️ Borrar conversación"):
         st.session_state.chat_historial = []
         st.rerun()
+
+st.write("---")
+
+# === SECCIÓN: CHAT GLOBAL DE LA COMUNIDAD (VISIBLE PARA TODOS LOS VISITANTES) ===
+st.header("🌎 Chat Global de la Comunidad")
+st.write("Deja tu mensaje para que lo vean todos los visitantes de la página:")
+
+DB_PATH = "chat_global.db"
+
+
+def conectar_bd():
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mensajes_globales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            fecha TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    return conn
+
+
+def obtener_mensajes(limite=50):
+    conn = conectar_bd()
+    filas = conn.execute(
+        "SELECT id, nombre, mensaje, fecha FROM mensajes_globales ORDER BY id DESC LIMIT ?",
+        (limite,),
+    ).fetchall()
+    conn.close()
+    return list(reversed(filas))
+
+
+def guardar_mensaje(nombre, mensaje):
+    conn = conectar_bd()
+    conn.execute(
+        "INSERT INTO mensajes_globales (nombre, mensaje, fecha) VALUES (?, ?, ?)",
+        (nombre.strip()[:40], mensaje.strip()[:300], datetime.now().strftime("%d/%m %H:%M")),
+    )
+    conn.commit()
+    conn.close()
+
+
+def borrar_mensaje(id_mensaje):
+    conn = conectar_bd()
+    conn.execute("DELETE FROM mensajes_globales WHERE id = ?", (id_mensaje,))
+    conn.commit()
+    conn.close()
+
+
+# Recordamos el nombre del visitante durante su sesión, para no pedirlo cada vez
+if "nombre_chat_global" not in st.session_state:
+    st.session_state.nombre_chat_global = ""
+
+with st.form("form_chat_global", clear_on_submit=True):
+    nombre_visitante = st.text_input(
+        "Tu nombre o apodo",
+        value=st.session_state.nombre_chat_global,
+        max_chars=40,
+        placeholder="Ej. Ana desde Santiago",
+    )
+    mensaje_visitante = st.text_area(
+        "Tu mensaje", max_chars=300, placeholder="Escribe algo para la comunidad...", height=80
+    )
+    enviar = st.form_submit_button("📨 Publicar mensaje")
+
+    if enviar:
+        if not nombre_visitante.strip() or not mensaje_visitante.strip():
+            st.warning("⚠️ Escribe tu nombre y un mensaje antes de publicar.")
+        else:
+            st.session_state.nombre_chat_global = nombre_visitante.strip()
+            guardar_mensaje(nombre_visitante, mensaje_visitante)
+            st.rerun()
+
+col_actualizar, col_moderar = st.columns([1, 1])
+with col_actualizar:
+    if st.button("🔄 Actualizar mensajes", use_container_width=True):
+        st.rerun()
+
+# Mostramos los mensajes más recientes, estilo muro público
+mensajes = obtener_mensajes()
+
+if not mensajes:
+    st.info("Todavía no hay mensajes. ¡Sé el primero en escribir algo! 👋")
+else:
+    for id_msg, nombre, texto, fecha in mensajes:
+        with st.chat_message("user"):
+            st.markdown(f"**{nombre}** · _{fecha}_")
+            st.write(texto)
+
+# Panel de moderación protegido con contraseña, solo para el equipo de Tecnología Warde
+with col_moderar:
+    with st.popover("🛡️ Panel de moderación", use_container_width=True):
+        clave_mod = st.text_input("Contraseña de moderador", type="password", key="clave_moderador")
+        clave_correcta = st.secrets.get("MOD_PASSWORD")
+        if clave_mod and clave_correcta and clave_mod == clave_correcta:
+            st.success("Acceso concedido.")
+            for id_msg, nombre, texto, fecha in mensajes:
+                col_txt, col_btn = st.columns([4, 1])
+                col_txt.write(f"**{nombre}** ({fecha}): {texto[:60]}")
+                if col_btn.button("🗑️", key=f"borrar_{id_msg}"):
+                    borrar_mensaje(id_msg)
+                    st.rerun()
+        elif clave_mod:
+            st.error("Contraseña incorrecta.")
+
+st.caption(
+    "⚠️ Este es un espacio público: cualquier visitante puede ver los mensajes. "
+    "Nunca compartas tu dirección, contraseñas ni datos bancarios aquí."
+)
 
 st.write("---")
 
