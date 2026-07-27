@@ -85,26 +85,3 @@ if "mensajes_chat" not in st.session_state:
         {"usuario": "Liam Muller", "texto": "¡Bienvenidos al chat oficial de la empresa! ⚡"},
         {"usuario": "Wilan", "texto": "¡Hola a todos! Lanzamos Tecnología Warde de forma oficial 🚀"}
     ]
-
-# Caja visual donde flotan los mensajes
-caja_chat = st.container(height=250)
-with caja_chat:
-    for msg in st.session_state.mensajes_chat:
-        st.markdown(f"**👤 {msg['usuario']}:** {msg['texto']}")
-
-# Formulario para escribir abajo de la caja
-with st.form("formulario_chat", clear_on_submit=True):
-    col_user, col_text = st.columns([1, 3]) # Proporción perfecta para las cajas
-    
-    with col_user:
-        nombre_usuario = st.text_input("Tu Nombre", placeholder="Ej: Juan", max_chars=12)
-    
-    with col_text:
-        texto_mensaje = st.text_input("Escribe un mensaje...", placeholder="Escribe aquí tu mensaje público...")
-    
-    boton_enviar = st.form_submit_button("🚀 Enviar Mensaje")
-
-# Agregar mensaje nuevo al enviar
-if boton_enviar and nombre_usuario and texto_mensaje:
-    st.session_state.mensajes_chat.append({"usuario": nombre_usuario, "texto": texto_mensaje})
-    st.rerun()
