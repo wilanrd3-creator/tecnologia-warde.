@@ -81,11 +81,10 @@ with col_fund3:
 
 st.write("---")
 
-# === NUEVA SECCIÓN: CONSULTOR DE IA INTEGRADO ===
+# === SECCIÓN: CONSULTOR DE IA INTEGRADO ===
 st.header("🤖 Consultor de Inteligencia Artificial Warde")
 st.write("Pregúntale lo que quieras a nuestra IA entrenada para dar respuestas rápidas:")
 
-# Intentamos sacar la clave secreta de la configuración de Streamlit Cloud
 try:
     HF_TOKEN = st.secrets["HF_TOKEN"]
 except Exception:
@@ -96,12 +95,10 @@ pregunta = st.text_input("💬 Escribe tu pregunta aquí:", placeholder="Ej. Dam
 if pregunta:
     if not HF_TOKEN:
         st.warning("⚙️ La IA está en modo de demostración. Configura tu 'HF_TOKEN' en Streamlit Cloud para activarla por completo.")
-        # Respuesta simulada por si no ha configurado la clave todavía
-        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API, podré responderte cualquier duda en tiempo real.")
+        st.info("👋 ¡Hola! Soy el asistente virtual de Tecnología Warde. Cuando mi desarrollador Wilan conecte mi clave API en la nube, podré responderte cualquier duda en tiempo real.")
     else:
         st.write("⚡ *Consultando al cerebro de la IA...*")
         
-        # Conexión directa a los servidores de Hugging Face
         API_URL = "https://huggingface.co"
         headers = {"Authorization": f"Bearer {HF_TOKEN}"}
         
@@ -114,8 +111,7 @@ if pregunta:
             response = requests.post(API_URL, headers=headers, json=payload)
             resultado = response.json()
             
-            # Limpiamos el texto que devuelve el modelo de IA
-            texto_respuesta = resultado[0]['generated_text']
+            texto_respuesta = resultado['generated_text']
             respuesta_limpia = texto_respuesta.split("<|assistant|>\n")[-1].strip()
             
             st.success("🤖 **Respuesta de la IA:**")
@@ -130,10 +126,9 @@ st.write("---")
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
 st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
 
-# CAMBIA ESTE CORREO POR EL TUYO REAL PARA RECIBIR LOS MENSAJES DE TUS CLIENTES
-tu_correo = "wilan@ejemplo.com" 
-
-url_formulario = f"https://formsubmit.co{wilanrd3@gmail.com}"
+# CONFIGURACIÓN CORRECTA DEL CORREO ELECTRÓNICO (Solución al NameError)
+tu_correo = "wilanrd3@gmail.com" 
+url_formulario = f"https://formsubmit.co{tu_correo}"
 
 with st.form(key="formulario_contacto", clear_on_submit=True):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
