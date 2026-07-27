@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import urllib.parse
 
 # 1. Configuración de pestaña con título y logo futurista
 st.set_page_config(page_title="Tecnología Warde | Oficial", page_icon="⚡", layout="centered")
@@ -55,7 +56,7 @@ st.write("---")
 # 6. Pasarela de Pagos Segura
 st.header("💳 Métodos de Pago")
 st.success("🔒 **Transacciones Seguras vía Banco BHD:** Procesamos todos nuestros cobros de forma directa y transparente mediante transferencias bancarias dominicanas.")
-st.warning("⚠️ **Aviso de Seguridad:** Toda contratación, presupuesto o detalle financiero debe ser coordinado bajo la supervisión directa de nuestros padres o tutores legales.")
+st.warning("⚠️ **Aviso de Seguridad:** Toda contratación, presupuesto o detalle financiero debe ser coordinated bajo la supervisión directa de nuestros padres o tutores legales.")
 
 st.write("---")
 
@@ -113,8 +114,8 @@ if pregunta:
             
             texto_respuesta = ""
             if isinstance(resultado, list) and len(resultado) > 0:
-                if 'generated_text' in resultado:
-                    texto_respuesta = resultado['generated_text']
+                if 'generated_text' in pointer: # Corrección de estructura general
+                    texto_respuesta = resultado[0]['generated_text']
             elif isinstance(resultado, dict):
                 if 'generated_text' in resultado:
                     texto_respuesta = resultado['generated_text']
@@ -137,16 +138,17 @@ if pregunta:
 
 st.write("---")
 
-# 8. Formulario de Contacto Interactivo (¡NUEVO SISTEMA DE REDIRECCIÓN INFALIBLE POR FORM-SUBMIT!)
+# 8. Formulario de Contacto Interactivo (¡NUEVO SISTEMA AUTOMÁTICO VÍA WHATSAPP!)
 st.header("📩 ¡Contáctanos y Cotiza tu Proyecto!")
-st.write("Completa tus datos y nos comunicaremos contigo lo antes posible:")
+st.write("Completa tus datos para enviarnos la información directamente a nuestro canal oficial:")
 
-# Volvemos al método directo limpio sin bloqueos de API interna
-url_formulario = "https://formsubmit.co"
+# TU NÚMERO DE TELÉFONO DE WHATSAPP CON CÓDIGO DE PAÍS (Ej. 1 para RD + tu número sin guiones)
+# CAMBIA ESTE NÚMERO POR EL TUYO REAL (Ejemplo actual: +1 809-555-1234 -> "18095551234")
+telefono_warde = "8094523054" 
 
-with st.form(key="formulario_contacto", clear_on_submit=True):
+with st.form(key="formulario_contacto", clear_on_submit=False):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
-    contacto_cliente = st.text_input("📱 Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
+    contacto_cliente = st.text_input("📱 Tu Teléfono / WhatsApp", placeholder="Ej. 809-555-1234")
     
     servicio_seleccionado = st.selectbox(
         "🛠️ ¿Qué servicio necesitas?",
@@ -163,24 +165,32 @@ with st.form(key="formulario_contacto", clear_on_submit=True):
     
     detalles_proyecto = st.text_area("✏️ Cuéntanos más detalles sobre tu idea", placeholder="Escribe aquí lo que necesitas...")
     
-    boton_enviar = st.form_submit_button(label="🚀 Enviar Solicitud de Cotización", type="primary")
+    boton_enviar = st.form_submit_button(label="🚀 Generar Mensaje de Cotización", type="primary")
 
     if boton_enviar:
         if nombre_cliente == "" or contacto_cliente == "" or servicio_seleccionado == "Selecciona una opción...":
             st.error("⚠️ Por favor, llena los campos obligatorios (Nombre, Contacto y Servicio).")
         else:
-            st.success("🎉 ¡Redirigiendo de forma segura para procesar tu solicitud!")
+            # Estructuramos el mensaje de texto limpio para WhatsApp
+            mensaje_texto = (
+                f"🚀 *NUEVA SOLICITUD - TECNOLOGÍA WARDE*\n\n"
+                f"👤 *Cliente:* {nombre_cliente}\n"
+                f"📱 *Contacto:* {contacto_cliente}\n"
+                f"🛠️ *Servicio:* {servicio_seleccionado}\n"
+                f"✏️ *Detalles del Proyecto:* {detalles_proyecto}"
+            )
             
-            # Formulario HTML nativo que viaja directo al servidor de FormSubmit
-            formulario_html = f"""
-            <form id="click_form" action="{url_formulario}" method="POST" target="_self">
-                <input type="hidden" name="Nombre del Cliente" value="{nombre_cliente}">
-                <input type="hidden" name="WhatsApp o Telefono" value="{contacto_cliente}">
-                <input type="hidden" name="Servicio Requerido" value="{servicio_seleccionado}">
-                <input type="hidden" name="Detalles del Proyecto" value="{detalles_proyecto}">
-                <input type="hidden" name="_captcha" value="false">
-                <input type="hidden" name="_next" value="https://streamlit.app">
-            </form>
-            <script>document.getElementById("click_form").submit();</script>
+            # Codificamos el texto para que sea una URL segura
+            mensaje_codificado = urllib.parse.quote(mensaje_texto)
+            enlace_whatsapp = f"https://wa.me{telefono_warde}?text={mensaje_codificado}"
+            
+            st.success("🎉 ¡Información empaquetada con éxito!")
+            
+            # Redirección automática instantánea mediante JavaScript nativo
+            js_redireccion = f"""
+            <script>
+                window.open("{enlace_whatsapp}", "_blank");
+            </script>
             """
-            st.markdown(formulario_html, unsafe_allow_html=True)
+            st.markdown(js_redireccion, unsafe_allow_html=True)
+            st.info("💡 Si tu navegador bloqueó la ventana emergente, haz [clic aquí para abrir el chat de WhatsApp]({})".format(enlace_whatsapp))
