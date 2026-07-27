@@ -144,7 +144,7 @@ st.write("Completa tus datos para enviarnos la información directamente a nuest
 
 # TU NÚMERO DE TELÉFONO DE WHATSAPP CON CÓDIGO DE PAÍS (Ej. 1 para RD + tu número sin guiones)
 # CAMBIA ESTE NÚMERO POR EL TUYO REAL (Ejemplo actual: +1 809-555-1234 -> "18095551234")
-telefono_warde = "8094523054" 
+telefono_warde = "18094523054" 
 
 with st.form(key="formulario_contacto", clear_on_submit=False):
     nombre_cliente = st.text_input("👤 Tu Nombre Completo", placeholder="Ej. Juan Pérez")
