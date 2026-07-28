@@ -571,29 +571,7 @@ with col_fund3:
 # ============================================================
 # 12. TESTIMONIOS (NUEVO)
 # ============================================================
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown(
-    "<h2 style='color:#e0e6ff;'>Lo que dicen nuestros clientes</h2>",
-    unsafe_allow_html=True,
-)
 
-testimonios = [
-    {
-        "texto": "Me hicieron la pagina web en menos de una semana. Quedo exactamente como la pedi y el precio fue justo. 100% recomendados.",
-        "autor": "Carlos M. — Santiago, RD",
-        "estrellas": 5,
-    },
-    {
-        "texto": "Contraté el paquete de posts para Instagram y mis seguidores notaron el cambio de inmediato. Muy profesionales y rapidos.",
-        "autor": "Maria V. — Santo Domingo",
-        "estrellas": 5,
-    },
-    {
-        "texto": "El servidor de Discord quedo perfecto. Los bots funcionan de maravilla y el diseno de los canales es muy ordenado.",
-        "autor": "Pedro R. — La Romana",
-        "estrellas": 5,
-    },
-]
 
 col_t1, col_t2, col_t3 = st.columns(3)
 cols_testi = [col_t1, col_t2, col_t3]
