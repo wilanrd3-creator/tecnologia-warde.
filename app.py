@@ -567,31 +567,8 @@ with col_fund3:
         """,
         unsafe_allow_html=True,
     )
-
 # ============================================================
-# 12. TESTIMONIOS (NUEVO)
-# ============================================================
-
-
-col_t1, col_t2, col_t3 = st.columns(3)
-cols_testi = [col_t1, col_t2, col_t3]
-
-for i, testi in enumerate(testimonios):
-    with cols_testi[i]:
-        estrellas_str = "*" * testi["estrellas"]
-        st.markdown(
-            f"""
-            <div class='testimonial-card'>
-                <div class='testi-stars'>{estrellas_str * 5 if False else "&#9733; " * testi["estrellas"]}</div>
-                <div class='testi-text'>"{testi["texto"]}"</div>
-                <div class='testi-author'>— {testi["autor"]}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-# ============================================================
-# 13. CHAT DE IA 24/7
+# 12. CHAT DE IA 24/7
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 style='color:#e0e6ff;'>Chat IA Warde — Disponible 24/7</h2>", unsafe_allow_html=True)
