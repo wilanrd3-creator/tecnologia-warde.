@@ -343,7 +343,7 @@ if "app_loaded" not in st.session_state:
             barra.progress(i)
     placeholder.empty()
     st.session_state.app_loaded = True
-    st.toast("Bienvenido a Tecnologia Warde! Estamos listos para servirte.", icon=":zap:")
+    st.toast("Bienvenido a Tecnologia Warde! Estamos listos para servirte.")
 
 # ============================================================
 # 5. CABECERA PRINCIPAL
@@ -790,7 +790,7 @@ with st.form("form_chat_global", clear_on_submit=True):
         else:
             st.session_state.nombre_chat_global = nombre_visitante.strip()
             guardar_mensaje(nombre_visitante, mensaje_visitante)
-            st.toast("Mensaje publicado con exito!", icon=":speech_balloon:")
+            st.toast("Mensaje publicado con exito!")
             st.rerun()
 
 col_actualizar, col_moderar = st.columns([1, 1])
@@ -949,3 +949,4 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
