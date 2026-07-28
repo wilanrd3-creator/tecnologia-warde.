@@ -74,7 +74,7 @@ class AppState:
         
     @staticmethod
     def get_notifications():
-        return st.session_state.notifications[-5:]  # Últimas 5 notificaciones
+        return st.session_state.notifications[-5:]
 
 # Inicializar estado
 AppState.init_state()
@@ -703,10 +703,6 @@ with st.sidebar:
                 align-items: center;
                 gap: 12px;
                 border: 1px solid transparent;
-                hover: {
-                    background: rgba(0, 212, 255, 0.05);
-                    border-color: rgba(0, 212, 255, 0.1);
-                }
             ">
                 <span style="font-size: 1.2rem;">{icon}</span>
                 <span style="font-weight: 500;">{label}</span>
@@ -829,7 +825,10 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<div style='border: none; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent); margin: 24px 0;'></div>", unsafe_allow_html=True)
+st.markdown(
+    "<div style='border: none; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent); margin: 24px 0;'></div>",
+    unsafe_allow_html=True,
+)
 
 # ============================================================
 # 7. PRESENTACIÓN EMPRESARIAL CON ANIMACIÓN
@@ -885,5 +884,14 @@ with st.container():
             unsafe_allow_html=True,
         )
 
-st.markdown("<div style='border: none; height: 1px; background: linear-gradient(90deg,
+st.markdown(
+    "<div style='border: none; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.2), transparent); margin: 24px 0;'></div>",
+    unsafe_allow_html=True,
+)
 
+# ============================================================
+# 8. METRICAS / ESTADISTICAS PREMIUM
+# ============================================================
+st.markdown(
+    """
+    <
