@@ -469,7 +469,7 @@ with st.expander("Siguenos en Nuestras Redes Sociales"):
                class='social-link' style='background:#1877F222; border-color:#1877F255;'>
                Facebook — Tecnologia Warde
             </a>
-            <a href='https://www.instagram.com/tecn.ologia891/' target='_blank'
+            <a href='https://www.instagram.com/tecnologiawarde/' target='_blank'
                class='social-link' style='background:#E1306C22; border-color:#E1306C55;'>
                Instagram — @tecn.ologia891
             </a>
