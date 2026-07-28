@@ -1,3 +1,4 @@
+
 import streamlit as st
 import urllib.parse
 import sqlite3
@@ -16,34 +17,38 @@ except ImportError:
 # ============================================================
 st.set_page_config(
     page_title="Tecnología Warde | Oficial",
-    page_icon="⚡",
+    page_icon="assets/favicon.png" if False else ":zap:",
     layout="centered",
     initial_sidebar_state="expanded",
 )
 
 # ============================================================
-# 2. CSS GLOBAL MEJORADO
+# 2. CSS GLOBAL MEJORADO — glassmorphism + animaciones
 # ============================================================
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600&display=swap');
 
+    /* ---- Fondo base ---- */
     .stApp {
         background: linear-gradient(135deg, #0F111A 0%, #141828 50%, #0A0D16 100%);
         font-family: 'Rajdhani', sans-serif;
     }
 
+    /* ---- Sidebar ---- */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #10131f 0%, #0c0f1a 100%);
         border-right: 1px solid #00A8FF22;
     }
 
+    /* ---- Encabezados globales ---- */
     h1, h2, h3 {
         font-family: 'Orbitron', sans-serif !important;
         letter-spacing: 1px;
     }
 
+    /* ---- Separador personalizado ---- */
     .divider {
         width: 100%;
         height: 2px;
@@ -53,6 +58,7 @@ st.markdown(
         border-radius: 2px;
     }
 
+    /* ---- Cards de servicios ---- */
     .service-card {
         background: rgba(0, 168, 255, 0.05);
         border: 1px solid rgba(0, 168, 255, 0.25);
@@ -101,6 +107,7 @@ st.markdown(
         font-weight: 600;
     }
 
+    /* ---- Tarjeta de fundadores ---- */
     .founder-card {
         background: rgba(123, 47, 190, 0.08);
         border: 1px solid rgba(123, 47, 190, 0.30);
@@ -144,6 +151,7 @@ st.markdown(
     .badge-active { background: #00A8FF22; color: #00CFFF; border: 1px solid #00A8FF55; }
     .badge-protected { background: #7B2FBE22; color: #b57bee; border: 1px solid #7B2FBE55; }
 
+    /* ---- Tarjeta de estadísticas ---- */
     .stat-card {
         background: rgba(0,168,255,0.06);
         border: 1px solid rgba(0,168,255,0.20);
@@ -161,6 +169,7 @@ st.markdown(
     }
     .stat-label { color: #888ea8; font-size: 0.82rem; margin-top: 4px; }
 
+    /* ---- Testimonios ---- */
     .testimonial-card {
         background: rgba(255,255,255,0.03);
         border: 1px solid rgba(255,255,255,0.09);
@@ -180,7 +189,18 @@ st.markdown(
     }
     .testi-text { color: #cdd6f4; font-size: 0.93rem; font-style: italic; line-height: 1.5; }
     .testi-author { color: #00A8FF; font-weight: 600; font-size: 0.85rem; margin-top: 8px; }
+    .testi-stars { color: #f1c40f; font-size: 0.85rem; }
 
+    /* ---- FAQ ---- */
+    .faq-item {
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+    }
+
+    /* ---- Garantia ---- */
     .garantia-box {
         background: linear-gradient(135deg, rgba(0,168,255,0.08), rgba(123,47,190,0.08));
         border: 1px solid rgba(0,168,255,0.30);
@@ -189,6 +209,7 @@ st.markdown(
         text-align: center;
     }
 
+    /* ---- Social links ---- */
     .social-link {
         display: inline-block;
         padding: 8px 18px;
@@ -203,6 +224,7 @@ st.markdown(
     }
     .social-link:hover { transform: translateY(-2px); filter: brightness(1.2); }
 
+    /* ---- Status badge ---- */
     .status-online {
         display: inline-flex;
         align-items: center;
@@ -224,9 +246,10 @@ st.markdown(
     }
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.75); }
+        50%       { opacity: 0.4; transform: scale(0.75); }
     }
 
+    /* ---- Footer ---- */
     .footer {
         text-align: center;
         padding: 24px 0 8px;
@@ -237,33 +260,15 @@ st.markdown(
     }
     .footer a { color: #00A8FF; text-decoration: none; }
 
+    /* ---- Progress bar override ---- */
     .stProgress > div > div { background: linear-gradient(90deg, #00A8FF, #7B2FBE) !important; }
 
+    /* ---- Metric overrides ---- */
     [data-testid="stMetric"] {
         background: rgba(0,168,255,0.06);
         border: 1px solid rgba(0,168,255,0.18);
         border-radius: 10px;
         padding: 12px 16px;
-    }
-    
-    .faq-item {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px;
-        padding: 16px 20px;
-        margin-bottom: 12px;
-    }
-    .faq-question {
-        color: #00A8FF;
-        font-family: 'Orbitron', sans-serif;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
-    .faq-answer {
-        color: #cdd6f4;
-        font-size: 0.9rem;
-        line-height: 1.6;
     }
     </style>
     """,
@@ -271,26 +276,20 @@ st.markdown(
 )
 
 # ============================================================
-# 3. SIDEBAR
+# 3. SIDEBAR — Navegación rápida + estado del sistema
 # ============================================================
 with st.sidebar:
     st.markdown(
-        "<h3 style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:1rem;'>NAVEGACIÓN RÁPIDA</h3>",
+        "<h3 style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:1rem;'>NAVEGACION RAPIDA</h3>",
         unsafe_allow_html=True,
     )
-    
-    # Menú de navegación clickeable
-    menu_items = {
-        "servicios": "Servicios",
-        "pagos": "Métodos de Pago", 
-        "fundadores": "Junta Directiva",
-        "chat_ia": "Chat IA 24/7",
-        "comunidad": "Comunidad",
-        "faq": "FAQ"
-    }
-    
-    for key, label in menu_items.items():
-        st.markdown(f'<a href="#{key}" style="text-decoration:none; color:#cdd6f4;">📌 {label}</a>', unsafe_allow_html=True)
+    st.markdown("- Servicios")
+    st.markdown("- Metodos de Pago")
+    st.markdown("- Junta Directiva")
+    st.markdown("- Chat IA 24/7")
+    st.markdown("- Comunidad")
+    st.markdown("- Contacto")
+    st.markdown("- FAQ")
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -306,16 +305,17 @@ with st.sidebar:
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
     st.markdown(
-        "<p style='color:#888ea8; font-size:0.78rem; text-transform:uppercase; letter-spacing:1px;'>Horario de Atención</p>",
+        "<p style='color:#888ea8; font-size:0.78rem; text-transform:uppercase; letter-spacing:1px;'>Horario de Atencion</p>",
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<p style='color:#cdd6f4; font-size:0.85rem;'>Lunes - Viernes: 9am - 8pm<br>Sábado: 10am - 5pm<br>Domingo: Solo IA 24/7</p>",
+        "<p style='color:#cdd6f4; font-size:0.85rem;'>Lunes - Viernes: 9am - 8pm<br>Sabado: 10am - 5pm<br>Domingo: Solo IA 24/7</p>",
         unsafe_allow_html=True,
     )
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
+    # Contador de visitas por sesion
     if "visita_contada" not in st.session_state:
         st.session_state.visita_contada = True
         if "total_visitas" not in st.session_state:
@@ -324,12 +324,12 @@ with st.sidebar:
             st.session_state.total_visitas += 1
 
     st.markdown(
-        f"<p style='color:#4a5070; font-size:0.75rem; text-align:center;'>Visitas en esta sesión: {st.session_state.get('total_visitas', 1)}</p>",
+        f"<p style='color:#4a5070; font-size:0.75rem; text-align:center;'>Visitas en esta sesion: {st.session_state.get('total_visitas', 1)}</p>",
         unsafe_allow_html=True,
     )
 
 # ============================================================
-# 4. BARRA DE CARGA INICIAL
+# 4. BARRA DE CARGA INICIAL (solo la primera vez)
 # ============================================================
 if "app_loaded" not in st.session_state:
     placeholder = st.empty()
@@ -344,7 +344,7 @@ if "app_loaded" not in st.session_state:
             barra.progress(i)
     placeholder.empty()
     st.session_state.app_loaded = True
-    st.toast("¡Bienvenido a Tecnología Warde! Estamos listos para servirte.")
+    st.toast("Bienvenido a Tecnologia Warde! Estamos listos para servirte.")
 
 # ============================================================
 # 5. CABECERA PRINCIPAL
@@ -356,15 +356,15 @@ st.markdown(
                     border:1px solid rgba(0,168,255,0.40); border-radius:20px;
                     color:#00A8FF; font-size:0.75rem; font-family:Orbitron,sans-serif;
                     letter-spacing:2px; margin-bottom:14px;'>
-            ✅ VERIFICADO | REPÚBLICA DOMINICANA
+            VERIFICADO | REPUBLICA DOMINICANA
         </div>
         <h1 style='color:#00A8FF; font-family:Orbitron,sans-serif;
                    font-size:2.4rem; margin:0; line-height:1.1;
                    text-shadow: 0 0 30px rgba(0,168,255,0.45);'>
-            TECNOLOGÍA WARDE
+            TECNOLOGIA WARDE
         </h1>
         <p style='color:#7B8DB0; font-size:1.05rem; margin-top:8px;'>
-            Tu tecnología en manos seguras &nbsp;|&nbsp; República Dominicana
+            Tu tecnologia en manos seguras &nbsp;|&nbsp; Republica Dominicana
         </p>
     </div>
     """,
@@ -374,128 +374,113 @@ st.markdown(
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 # ============================================================
-# 6. PRESENTACIÓN DE LA EMPRESA
+# 6. PRESENTACION DE LA EMPRESA
 # ============================================================
 st.info(
-    "¡Bienvenido al futuro digital! En *Tecnología Warde* transformamos tus ideas en realidad. "
-    "Ofrecemos soluciones tecnológicas profesionales, desde optimización de plataformas hasta "
-    "desarrollo web avanzado. **Todo 100% digital, rápido y sin salir de tu casa.**"
+    "Bienvenido al futuro digital! En *Tecnologia Warde* transformamos tus ideas en realidad. "
+    "Ofrecemos soluciones tecnologicas profesionales, desde optimizacion de plataformas hasta "
+    "desarrollo web avanzado. **Todo 100% digital, rapido y sin salir de tu casa.**"
 )
 
 # ============================================================
-# 7. MÉTRICAS / ESTADÍSTICAS
+# 7. METRICAS / ESTADISTICAS
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(
-    "<h3 style='color:#e0e6ff; font-family:Orbitron,sans-serif; font-size:1rem; text-align:center; letter-spacing:2px;'>NÚMEROS QUE NOS RESPALDAN</h3>",
+    "<h3 style='color:#e0e6ff; font-family:Orbitron,sans-serif; font-size:1rem; text-align:center; letter-spacing:2px;'>NUMEROS QUE NOS RESPALDAN</h3>",
     unsafe_allow_html=True,
 )
 
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 with col_m1:
-    st.metric(label="Proyectos completados", value="50+", delta="Activos")
+    st.metric(label="Proyectos completados", value="0+", delta="Activos")
 with col_m2:
-    st.metric(label="Clientes satisfechos", value="30+", delta="Y creciendo")
+    st.metric(label="Clientes satisfechos", value="0+", delta="Y creciendo")
 with col_m3:
-    st.metric(label="Servicios disponibles", value="10+", delta="Categorías")
+    st.metric(label="Servicios disponibles", value="100+", delta="Categorias")
 with col_m4:
     st.metric(label="Disponibilidad IA", value="24/7", delta="Sin parar")
 
 # ============================================================
-# 8. CATÁLOGO DE SERVICIOS
+# 8. CATALOGO DE SERVICIOS — cards enriquecidas + expanders
 # ============================================================
-st.markdown("<div id='servicios' class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(
-    "<h2 style='color:#e0e6ff;'>Catálogo de Servicios</h2>",
+    "<h2 style='color:#e0e6ff;'>Catalogo de Servicios</h2>",
     unsafe_allow_html=True,
 )
-st.write("Haz clic en cada categoría para ver los detalles y precios oficiales:")
+st.write("Haz clic en cada categoria para ver los detalles y precios oficiales:")
 
-with st.expander("🎬 MULTIMEDIA: Edición de Video & YouTube"):
+with st.expander("MULTIMEDIA: Edicion de Video & YouTube"):
     st.markdown(
         """
         <div class='service-card'>
-            <div class='service-title'>Edición de Videos Cortos</div>
-            <div class='service-desc'>Cortamos y optimizamos tus Reels, TikToks o Shorts con subtítulos dinámicos y música en tendencia. Entrega rápida y revisiones incluidas.</div>
+            <div class='service-title'>Edicion de Videos Cortos</div>
+            <div class='service-desc'>Cortamos y optimizamos tus Reels, TikToks o Shorts con subtitulos dinamicos y musica en tendencia. Entrega rapida y revisiones incluidas.</div>
             <span class='service-price'>RD$ 100 - RD$ 150 por video</span>
         </div>
         <div class='service-card'>
             <div class='service-title'>Miniaturas de YouTube</div>
-            <div class='service-desc'>Diseños con alto porcentaje de clics (CTR) para hacer crecer tu canal. Formato optimizado para todos los dispositivos.</div>
-            <span class='service-price'>RD$ 150 por diseño</span>
-        </div>
-        <div class='service-card'>
-            <div class='service-title'>Edición de Videos Largos</div>
-            <div class='service-desc'>Videos de 10-60 minutos con corrección de color, audio mejorado, cortes dinámicos y gráficos profesionales.</div>
-            <span class='service-price'>RD$ 400 - RD$ 800 por video</span>
+            <div class='service-desc'>Disenos con alto porcentaje de clics (CTR) para hacer crecer tu canal. Formato optimizado para todos los dispositivos.</div>
+            <span class='service-price'>RD$ 150 por diseno</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-with st.expander("💻 PROGRAMACIÓN: Desarrollo Web Avanzado"):
+with st.expander("PROGRAMACION: Desarrollo Web Avanzado"):
     st.markdown(
         """
         <div class='service-card'>
-            <div class='service-title'>Páginas Web en Python (Streamlit / Anvil)</div>
-            <div class='service-desc'>Landing pages y sitios web modernos e interactivos para negocios. Incluye dominio configurado, diseño responsivo y soporte inicial.</div>
+            <div class='service-title'>Paginas Web en Python (Streamlit / Anvil)</div>
+            <div class='service-desc'>Landing pages y sitios web modernos e interactivos para negocios. Incluye dominio configurado, diseno responsivo y soporte inicial.</div>
             <span class='service-price'>RD$ 700 - RD$ 1,000</span>
         </div>
         <div class='service-card'>
-            <div class='service-title'>Configuración de Servidores de Discord</div>
-            <div class='service-desc'>Creación completa con canales ordenados, roles personalizados, seguridad anti-spam y bots automatizados.</div>
+            <div class='service-title'>Configuracion de Servidores de Discord</div>
+            <div class='service-desc'>Creacion completa con canales ordenados, roles personalizados, seguridad anti-spam y bots automatizados.</div>
             <span class='service-price'>RD$ 300 - RD$ 400</span>
-        </div>
-        <div class='service-card'>
-            <div class='service-title'>Automatización con Python</div>
-            <div class='service-desc'>Scripts para automatizar tareas repetitivas, scraping web, procesamiento de datos y bots personalizados.</div>
-            <span class='service-price'>RD$ 500 - RD$ 1,500</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-with st.expander("🎨 DISEÑO GRÁFICO: Marca y Redes Sociales"):
+with st.expander("DISENO GRAFICO: Marca y Redes Sociales"):
     st.markdown(
         """
         <div class='service-card'>
             <div class='service-title'>Paquetes de Posts para Redes</div>
-            <div class='service-desc'>Imágenes publicitarias personalizadas para Facebook o Instagram. Diseños coherentes con tu marca y en formato ideal para cada red.</div>
-            <span class='service-price'>RD$ 150 - RD$ 300 por diseño</span>
+            <div class='service-desc'>Imagenes publicitarias personalizadas para Facebook o Instagram. Disenos coherentes con tu marca y en formato ideal para cada red.</div>
+            <span class='service-price'>RD$ 150 - RD$ 300 por diseno</span>
         </div>
         <div class='service-card'>
             <div class='service-title'>Invitaciones Digitales</div>
-            <div class='service-desc'>Tarjetas de cumpleaños o eventos listas para enviar por WhatsApp. Personalizadas con tu texto, colores e imágenes.</div>
-            <span class='service-price'>RD$ 200 por diseño</span>
-        </div>
-        <div class='service-card'>
-            <div class='service-title'>Diseño de Logo Profesional</div>
-            <div class='service-desc'>Logo único y memorable para tu marca. Incluye versiones en diferentes formatos y variaciones de color.</div>
-            <span class='service-price'>RD$ 500 - RD$ 800</span>
+            <div class='service-desc'>Tarjetas de cumpleanos o eventos listas para enviar por WhatsApp. Personalizadas con tu texto, colores e imagenes.</div>
+            <span class='service-price'>RD$ 200 por diseno</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-with st.expander("📱 Síguenos en Nuestras Redes Sociales"):
+with st.expander("Siguenos en Nuestras Redes Sociales"):
     st.markdown(
         """
         <div style='padding: 8px 0;'>
             <a href='https://www.facebook.com/profile.php?id=61591849505301' target='_blank'
                class='social-link' style='background:#1877F222; border-color:#1877F255;'>
-               📘 Facebook — Tecnología Warde
+               Facebook — Tecnologia Warde
             </a>
             <a href='https://www.instagram.com/tecnologiawarde/' target='_blank'
                class='social-link' style='background:#E1306C22; border-color:#E1306C55;'>
-               📸 Instagram — @tecnologiawarde
+               Instagram — @tecnlogiawarde
             </a>
             <a href='https://www.tiktok.com/@tecnologiawarde?lang=es-419' target='_blank'
                class='social-link' style='background:#69C9D022; border-color:#69C9D055;'>
-               🎵 TikTok — @tecnologiawarde
+               TikTok — @tecnologiawarde
             </a>
             <a href='https://discord.com/invite/vATQrTftJ' target='_blank'
                class='social-link' style='background:#5865F222; border-color:#5865F255;'>
-               💬 Discord — Únete al servidor
+               Discord — Unete al servidor
             </a>
         </div>
         """,
@@ -503,43 +488,34 @@ with st.expander("📱 Síguenos en Nuestras Redes Sociales"):
     )
 
 # ============================================================
-# 9. MÉTODOS DE PAGO
+# 9. METODOS DE PAGO
 # ============================================================
-st.markdown("<div id='pagos' class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Métodos de Pago</h2>", unsafe_allow_html=True)
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#e0e6ff;'>Metodos de Pago</h2>", unsafe_allow_html=True)
 
 col_pay1, col_pay2 = st.columns(2)
 with col_pay1:
     st.success(
-        "**Transacciones Seguras vía Banco BHD:** Procesamos todos nuestros cobros "
+        "**Transacciones Seguras via Banco BHD:** Procesamos todos nuestros cobros "
         "de forma directa y transparente mediante transferencias bancarias dominicanas."
-    )
-with col_pay2:
-    st.info(
-        "**Proceso de pago:**\n"
-        "1. Solicitas tu servicio\n"
-        "2. Te enviamos los datos de la cuenta\n"  
-        "3. Realizas el depósito/transferencia\n"
-        "4. Envías el comprobante\n"
-        "5. ¡Comenzamos tu proyecto!"
     )
 
 # ============================================================
-# 10. GARANTÍA DE SERVICIO
+# 10. GARANTIA DE SERVICIO (NUEVO)
 # ============================================================
 st.markdown(
     """
     <div class='garantia-box'>
         <p style='font-family:Orbitron,sans-serif; color:#00A8FF; font-size:0.9rem; margin-bottom:10px; letter-spacing:1px;'>
-            ⚡ GARANTÍA WARDE
+            GARANTIA WARDE
         </p>
         <p style='color:#cdd6f4; font-size:0.95rem; line-height:1.6; margin:0;'>
-            Todos nuestros servicios incluyen <strong style='color:#00CFFF;'>revisión ilimitada hasta tu aprobación total</strong>.
+            Todos nuestros servicios incluyen <strong style='color:#00CFFF;'>revision ilimitada hasta tu aprobacion total</strong>.
             Si el resultado final no cumple lo acordado, lo corregimos sin costo adicional.
-            Tu satisfacción es nuestra prioridad.
+            Tu satisfaccion es nuestra prioridad.
         </p>
         <p style='color:#7B8DB0; font-size:0.80rem; margin-top:12px; margin-bottom:0;'>
-            * Aplica dentro de los 7 días siguientes a la entrega del proyecto.
+            * Aplica dentro de los 7 dias siguientes a la entrega del proyecto.
         </p>
     </div>
     """,
@@ -547,9 +523,9 @@ st.markdown(
 )
 
 # ============================================================
-# 11. JUNTA DIRECTIVA
+# 11. JUNTA DIRECTIVA — Tarjetas visuales
 # ============================================================
-st.markdown("<div id='fundadores' class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 style='color:#e0e6ff;'>Junta Directiva</h2>", unsafe_allow_html=True)
 
 col_fund1, col_fund2, col_fund3 = st.columns(3)
@@ -558,9 +534,9 @@ with col_fund1:
     st.markdown(
         """
         <div class='founder-card'>
-            <div class='founder-avatar'>👤</div>
-            <div class='founder-name'>CEO Estratégico</div>
-            <div class='founder-role'>Visión de negocio y desarrollo. Prefiere mantener su identidad reservada.</div>
+            <div class='founder-avatar'>?</div>
+            <div class='founder-name'>CEO 1</div>
+            <div class='founder-role'>Vision de negocio y desarrollo. Prefiere mantener su identidad reservada.</div>
             <span class='founder-badge badge-protected'>Identidad Protegida</span>
         </div>
         """,
@@ -573,8 +549,8 @@ with col_fund2:
         <div class='founder-card'>
             <div class='founder-avatar' style='font-size:22px; font-family:Orbitron,sans-serif; color:#fff;'>LM</div>
             <div class='founder-name'>LIAM MULLER</div>
-            <div class='founder-role'>Co-Fundador & Desarrollador de Sistemas. Especialista en Optimización Tecnológica.</div>
-            <span class='founder-badge badge-active'>🟢 Activo</span>
+            <div class='founder-role'>Co-Fundador.</div>
+            <span class='founder-badge badge-active'>Activo</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -586,46 +562,42 @@ with col_fund3:
         <div class='founder-card'>
             <div class='founder-avatar' style='font-size:22px; font-family:Orbitron,sans-serif; color:#fff;'>DS</div>
             <div class='founder-name'>DAWEL SONYIS</div>
-            <div class='founder-role'>Fundador Principal, Mayor Accionista. Líder del departamento de Recursos Humanos.</div>
-            <span class='founder-badge badge-active'>🟢 Activo</span>
+            <div class='founder-role'>FUNDADOR 3, Lider de las acciones y jefe del depto. de recursos humanos.</div>
+            <span class='founder-badge badge-active'>Activo</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
 # ============================================================
 # 12. CHAT DE IA 24/7
 # ============================================================
-st.markdown("<div id='chat_ia' class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>🤖 Chat IA Warde — Disponible 24/7</h2>", unsafe_allow_html=True)
-st.write("Nuestro asistente virtual está activo a toda hora, incluso cuando el equipo humano no está conectado:")
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#e0e6ff;'>Chat IA Warde — Disponible 24/7</h2>", unsafe_allow_html=True)
+st.write("Nuestro asistente virtual esta activo a toda hora, incluso cuando el equipo humano no esta conectado:")
 
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
 
 SYSTEM_PROMPT = (
-    "Eres el asistente virtual oficial de 'Tecnología Warde', una empresa dominicana de servicios "
-    "digitales (edición de video, diseño gráfico y desarrollo web). "
-    "Responde siempre en español, de forma directa, profesional, amigable y en pocas líneas. "
+    "Eres el asistente virtual oficial de 'Tecnologia Warde', una empresa dominicana de servicios "
+    "digitales (edicion de video, diseno grafico y desarrollo web). "
+    "Responde siempre en espanol, de forma directa, profesional, amigable y en pocas lineas. "
     "Si no sabes algo con certeza, dilo y sugiere contactar a la Junta Directiva por el formulario de abajo.\n\n"
     "LISTA DE PRECIOS OFICIALES (en Pesos Dominicanos RD$):\n"
     "MULTIMEDIA:\n"
-    "- Edición de Videos Cortos (TikTok/Reels/Shorts con subtítulos): RD$ 100 - RD$ 150 por video\n"
-    "- Miniaturas de YouTube: RD$ 150 por diseño\n"
-    "- Edición de Videos Largos: RD$ 400 - RD$ 800 por video\n"
-    "PROGRAMACIÓN:\n"
-    "- Páginas Web en Python (Streamlit/Anvil): RD$ 700 - RD$ 1,000\n"
-    "- Configuración de Servidores de Discord (canales, roles, anti-spam, bots): RD$ 300 - RD$ 400\n"
-    "- Automatización con Python: RD$ 500 - RD$ 1,500\n"
-    "DISEÑO GRÁFICO:\n"
-    "- Paquetes de Posts para Facebook/Instagram: RD$ 150 - RD$ 300 por diseño\n"
-    "- Invitaciones Digitales: RD$ 200 por diseño\n"
-    "- Diseño de Logo Profesional: RD$ 500 - RD$ 800\n\n"
-    "MÉTODO DE PAGO: transferencia bancaria directa por Banco BHD (República Dominicana).\n"
-    "Toda contratación o presupuesto final debe coordinarse con el Administrador Ejecutivo.\n\n"
-    "INFORMACIÓN DEL EQUIPO:\n"
-    "Fundador 3: Dawel Sonyis — Fundador de Tecnología Warde y mayor accionista. "
-    "Administrador ejecutivo, líder de las acciones y jefe del departamento de recursos humanos.\n"
-    "Fundador 2: Liam Muller — Desarrollador de Sistemas, Co-Fundador y Especialista en Optimización Tecnológica."
+    "- Edicion de Videos Cortos (TikTok/Reels/Shorts con subtitulos): RD$ 100 - RD$ 150 por video\n"
+    "- Miniaturas de YouTube: RD$ 150 por diseno\n"
+    "PROGRAMACION:\n"
+    "- Paginas Web en Python (Streamlit/Anvil): RD$ 700 - RD$ 1,000\n"
+    "- Configuracion de Servidores de Discord (canales, roles, anti-spam, bots): RD$ 300 - RD$ 400\n"
+    "DISENO GRAFICO:\n"
+    "- Paquetes de Posts para Facebook/Instagram: RD$ 150 - RD$ 300 por diseno\n"
+    "- Invitaciones Digitales: RD$ 200 por diseno\n\n"
+    "METODO DE PAGO: transferencia bancaria directa por Banco BHD (Republica Dominicana).\n"
+    "Toda contratacion o presupuesto final debe coordinarse con el Administrador Ejecutivo.\n\n"
+    "INFORMACION DEL EQUIPO:\n"
+    "Fundador 3: Dawel Sonyis — Fundador de Tecnologia Warde y mayor accionista. "
+    "Administrador ejecutivo, lider de las acciones y jefe del departamento de recursos humanos.\n"
+    "Fundador 2: Liam Muller — Desarrollador de Sistemas, Co-Fundador y Especialista en Optimizacion Tecnologica."
 )
 
 if "chat_historial" not in st.session_state:
@@ -635,7 +607,7 @@ for autor, texto in st.session_state.chat_historial:
     with st.chat_message(autor):
         st.write(texto)
 
-pregunta = st.chat_input("Escribe tu mensaje aquí... (Ej. ¿Cuánto cuesta una página web?)")
+pregunta = st.chat_input("Escribe tu mensaje aqui... (Ej. Cuanto cuesta una pagina web?)")
 
 if pregunta:
     st.session_state.chat_historial.append(("user", pregunta))
@@ -645,9 +617,9 @@ if pregunta:
     with st.chat_message("assistant"):
         if not GROQ_API_KEY:
             respuesta = (
-                "¡Hola! Soy el asistente virtual de Tecnología Warde. Estoy en modo de demostración "
-                "porque aún no se ha configurado la clave 'GROQ_API_KEY' en Streamlit Cloud. "
-                "Mientras tanto, puedes revisar el catálogo arriba o escribirnos por el formulario de contacto."
+                "Hola! Soy el asistente virtual de Tecnologia Warde. Estoy en modo de demostracion "
+                "porque aun no se ha configurado la clave 'GROQ_API_KEY' en Streamlit Cloud. "
+                "Mientras tanto, puedes revisar el catalogo arriba o escribirnos por el formulario de contacto."
             )
             st.write(respuesta)
         else:
@@ -669,14 +641,14 @@ if pregunta:
                     error_str = str(e)
                     if "429" in error_str or "rate_limit" in error_str.lower():
                         respuesta = (
-                            "He procesado muchas preguntas en las últimas horas y estoy descansando "
+                            "He procesado muchas preguntas en las ultimas horas y estoy descansando "
                             "temporalmente. Intenta de nuevo en unos minutos o escribe directamente a la "
                             "Junta Directiva abajo."
                         )
                     else:
                         respuesta = (
-                            "Los servidores de Groq están procesando cambios en su red. "
-                            "Inténtalo de nuevo en breve."
+                            "Los servidores de Groq estan procesando cambios en su red. "
+                            "Intentalo de nuevo en breve."
                         )
                 st.write(respuesta)
 
@@ -685,18 +657,19 @@ if pregunta:
 col_chat1, col_chat2 = st.columns([3, 1])
 with col_chat2:
     if st.session_state.chat_historial:
-        if st.button("🗑️ Borrar conversación", use_container_width=True):
+        if st.button("Borrar conversacion", use_container_width=True):
             st.session_state.chat_historial = []
             st.rerun()
 
 # ============================================================
-# 13. CHAT GLOBAL DE LA COMUNIDAD
+# 14. CHAT GLOBAL DE LA COMUNIDAD
 # ============================================================
-st.markdown("<div id='comunidad' class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>💬 Chat Global de la Comunidad</h2>", unsafe_allow_html=True)
-st.write("Deja tu mensaje para que lo vean todos los visitantes de la página:")
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#e0e6ff;'>Chat Global de la Comunidad</h2>", unsafe_allow_html=True)
+st.write("Deja tu mensaje para que lo vean todos los visitantes de la pagina:")
 
 DB_PATH = "chat_global.db"
+
 
 def conectar_bd():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -713,6 +686,7 @@ def conectar_bd():
     conn.commit()
     return conn
 
+
 def obtener_mensajes(limite=50):
     conn = conectar_bd()
     filas = conn.execute(
@@ -721,6 +695,7 @@ def obtener_mensajes(limite=50):
     ).fetchall()
     conn.close()
     return list(reversed(filas))
+
 
 def guardar_mensaje(nombre, mensaje):
     conn = conectar_bd()
@@ -735,11 +710,13 @@ def guardar_mensaje(nombre, mensaje):
     conn.commit()
     conn.close()
 
+
 def borrar_mensaje(id_mensaje):
     conn = conectar_bd()
     conn.execute("DELETE FROM mensajes_globales WHERE id = ?", (id_mensaje,))
     conn.commit()
     conn.close()
+
 
 if "nombre_chat_global" not in st.session_state:
     st.session_state.nombre_chat_global = ""
@@ -757,24 +734,24 @@ with st.form("form_chat_global", clear_on_submit=True):
         placeholder="Escribe algo para la comunidad...",
         height=80,
     )
-    enviar = st.form_submit_button("📤 Publicar mensaje")
+    enviar = st.form_submit_button("Publicar mensaje")
     if enviar:
         if not nombre_visitante.strip() or not mensaje_visitante.strip():
             st.warning("Escribe tu nombre y un mensaje antes de publicar.")
         else:
             st.session_state.nombre_chat_global = nombre_visitante.strip()
             guardar_mensaje(nombre_visitante, mensaje_visitante)
-            st.toast("¡Mensaje publicado con éxito!")
+            st.toast("Mensaje publicado con exito!")
             st.rerun()
 
 col_actualizar, col_moderar = st.columns([1, 1])
 with col_actualizar:
-    if st.button("🔄 Actualizar mensajes", use_container_width=True):
+    if st.button("Actualizar mensajes", use_container_width=True):
         st.rerun()
 
 mensajes = obtener_mensajes()
 if not mensajes:
-    st.info("Todavía no hay mensajes. ¡Sé el primero en escribir algo!")
+    st.info("Todavia no hay mensajes. Se el primero en escribir algo!")
 else:
     for id_msg, nombre, texto, fecha in mensajes:
         with st.chat_message("user"):
@@ -782,96 +759,143 @@ else:
             st.write(texto)
 
 with col_moderar:
-    with st.popover("🔧 Panel de moderación", use_container_width=True):
-        clave_mod = st.text_input("Contraseña de moderador", type="password", key="clave_moderador")
+    with st.popover("Panel de moderacion", use_container_width=True):
+        clave_mod = st.text_input("Contrasena de moderador", type="password", key="clave_moderador")
         clave_correcta = st.secrets.get("MOD_PASSWORD")
         if clave_mod and clave_correcta and clave_mod == clave_correcta:
-            st.success("✅ Acceso concedido.")
+            st.success("Acceso concedido.")
             for id_msg, nombre, texto, fecha in mensajes:
                 col_txt, col_btn = st.columns([4, 1])
                 col_txt.write(f"**{nombre}** ({fecha}): {texto[:60]}")
-                if col_btn.button("❌", key=f"borrar_{id_msg}"):
+                if col_btn.button("X", key=f"borrar_{id_msg}"):
                     borrar_mensaje(id_msg)
                     st.rerun()
         elif clave_mod:
-            st.error("❌ Contraseña incorrecta.")
+            st.error("Contrasena incorrecta.")
 
 st.caption(
-    "Este es un espacio público: cualquier visitante puede ver los mensajes. "
-    "Nunca compartas tu dirección, contraseñas ni datos bancarios aquí."
+    "Este es un espacio publico: cualquier visitante puede ver los mensajes. "
+    "Nunca compartas tu direccion, contrasenhas ni datos bancarios aqui."
 )
 
 # ============================================================
-# 14. FAQ — PREGUNTAS FRECUENTES
+# 15. FAQ — PREGUNTAS FRECUENTES (NUEVO)
 # ============================================================
-st.markdown("<div id='faq' class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>❓ Preguntas Frecuentes (FAQ)</h2>", unsafe_allow_html=True)
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#e0e6ff;'>Preguntas Frecuentes (FAQ)</h2>", unsafe_allow_html=True)
 
 faqs = [
     (
-        "¿Cuánto tiempo tarda en estar listo mi proyecto?",
-        "Los tiempos varían según el servicio: edición de videos cortos (24-48 horas), diseños gráficos (24-72 horas) y páginas web (5-7 días hábiles). Te avisaremos antes de comenzar y te mantendremos informado durante todo el proceso.",
+        "Cuanto tiempo tarda en estar listo mi proyecto?",
+        "Los tiempos varian segun el servicio: edicion de videos (24-48 horas), disenos graficos (24-72 horas) y paginas web (5-7 dias habiles). Te avisaremos antes de comenzar.",
     ),
     (
-        "¿Cómo se realiza el pago?",
-        "A través de transferencia bancaria directa por Banco BHD. Una vez acordemos el servicio, te enviamos los datos de la cuenta para que realices el depósito o transferencia. Confirmamos con el comprobante y comenzamos de inmediato.",
+        "Como se realiza el pago?",
+        "A traves de transferencia bancaria directa por Banco BHD. Te enviaremos los datos al confirmar el pedido. No manejamos efectivo ni pagos por terceros.",
     ),
     (
-        "¿Qué pasa si no me gusta el resultado?",
-        "Todos nuestros servicios incluyen revisiones ilimitadas hasta tu total aprobación. Si algo no cumple con lo acordado, lo corregimos sin costo adicional dentro de los 7 días siguientes a la entrega.",
+        "Puedo pedir una revision del trabajo?",
+        "Si, todos nuestros servicios incluyen revisiones ilimitadas dentro de los 7 dias posteriores a la entrega, hasta que quedes completamente satisfecho.",
     ),
     (
-        "¿Trabajan con clientes fuera de República Dominicana?",
-        "¡Por supuesto! Aunque estamos basados en República Dominicana, trabajamos con clientes de todo el mundo. Los pagos internacionales se pueden coordinar vía PayPal o Wise (TransferWise).",
+        "Trabajan con clientes fuera de Republica Dominicana?",
+        "Principalmente servimos a clientes dentro de RD, pero podemos coordinar proyectos con clientes del exterior a traves de medios digitales.",
     ),
     (
-        "¿Necesito tener conocimientos técnicos para contratar una página web?",
-        "No es necesario. Nosotros nos encargamos de todo el proceso técnico. Te entregamos el sitio listo para usar y te explicamos cómo administrarlo de forma sencilla si lo deseas.",
-    ),
-    (
-        "¿Ofrecen facturación para empresas?",
-        "Sí, podemos emitir comprobantes de venta para empresas dominicanas. Solo indícanos tus datos fiscales al momento de la contratación.",
-    ),
-    (
-        "¿Puedo solicitar cambios después de entregado el proyecto?",
-        "Sí, ofrecemos soporte post-entrega. Los cambios menores están incluidos en la garantía. Para modificaciones mayores o nuevas funcionalidades, podemos cotizarlas por separado.",
-    ),
-    (
-        "¿Cómo contacto directamente a la Junta Directiva?",
-        "Puedes escribirnos por cualquiera de nuestras redes sociales (Instagram, Facebook, TikTok) o unirte a nuestro servidor de Discord. También puedes consultar con nuestro chat de IA que te guiará en el proceso.",
+        "Que necesito para contratar una pagina web?",
+        "Solo necesitas contarnos tu idea, el proposito del sitio y cualquier referencia de diseno. Nosotros nos encargamos de todo el proceso tecnico.",
     ),
 ]
 
-for pregunta, respuesta in faqs:
-    st.markdown(
-        f"""
-        <div class='faq-item'>
-            <div class='faq-question'>❓ {pregunta}</div>
-            <div class='faq-answer'>{respuesta}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+for pregunta_faq, respuesta_faq in faqs:
+    with st.expander(f"  {pregunta_faq}"):
+        st.write(respuesta_faq)
 
 # ============================================================
-# 15. FOOTER
+# 16. FORMULARIO DE CONTACTO POR WHATSAPP
 # ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#e0e6ff;'>Contactanos y Cotiza tu Proyecto</h2>", unsafe_allow_html=True)
+st.write("Completa tus datos para generar tu orden de servicio:")
+
+telefono_warde = "18094523054"
+
+nombre_cliente = st.text_input("Tu Nombre Completo", placeholder="Ej. Juan Perez")
+contacto_cliente = st.text_input("Tu Telefono / WhatsApp", placeholder="Ej. 809-555-1234")
+servicio_seleccionado = st.selectbox(
+    "Que servicio necesitas?",
+    [
+        "Selecciona una opcion...",
+        "MULTIMEDIA: Edicion de Video Corto",
+        "MULTIMEDIA: Miniatura de YouTube",
+        "PROGRAMACION: Pagina Web con Python",
+        "PROGRAMACION: Soporte / Servidor de Discord",
+        "DISENO: Paquete para Redes Sociales",
+        "DISENO: Invitacion Digital",
+    ],
+)
+presupuesto_ref = st.select_slider(
+    "Presupuesto de referencia (RD$)",
+    options=[
+        "Menos de RD$ 200",
+        "RD$ 200 - RD$ 500",
+        "RD$ 500 - RD$ 800",
+        "RD$ 800 - RD$ 1,000",
+        "Mas de RD$ 1,000",
+    ],
+    value="RD$ 200 - RD$ 500",
+)
+detalles_proyecto = st.text_area(
+    "Cuentanos mas detalles sobre tu idea",
+    placeholder="Escribe aqui lo que necesitas...",
+)
+urgencia = st.radio(
+    "Nivel de urgencia",
+    ["Normal (5-7 dias)", "Rapido (2-3 dias, puede aplicar recargo)", "Urgente (24-48 horas, recargo adicional)"],
+    horizontal=True,
+)
+
+if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona una opcion...":
+    mensaje_texto = (
+        f"NUEVA SOLICITUD - TECNOLOGIA WARDE\n\n"
+        f"Cliente: {nombre_cliente}\n"
+        f"Contacto: {contacto_cliente}\n"
+        f"Servicio: {servicio_seleccionado}\n"
+        f"Presupuesto de referencia: {presupuesto_ref}\n"
+        f"Urgencia: {urgencia}\n"
+        f"Detalles: {detalles_proyecto}"
+    )
+    mensaje_codificado = urllib.parse.quote(mensaje_texto)
+    enlace_whatsapp = f"https://wa.me/{telefono_warde}?text={mensaje_codificado}"
+    st.write("")
+    st.link_button(
+        "Enviar orden por WhatsApp",
+        enlace_whatsapp,
+        type="primary",
+        use_container_width=True,
+    )
+    st.caption("Al hacer clic se abrira WhatsApp con tu solicitud prellenada. Solo presiona Enviar.")
+else:
+    st.info("Completa los campos de Nombre, Telefono y Servicio para habilitar el boton de envio.")
+
+# ============================================================
+# 17. FOOTER PROFESIONAL (NUEVO)
+# ============================================================
+ano_actual = datetime.now().year
 st.markdown(
-    """
+    f"""
     <div class='footer'>
-        <p style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:1rem; margin-bottom:8px;'>
-            TECNOLOGÍA WARDE
+        <p style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:0.85rem; margin-bottom:6px;'>
+            TECNOLOGIA WARDE
         </p>
-        <p>República Dominicana | Tecnología en manos seguras</p>
-        <p style='margin-top:12px;'>
-            <a href='https://www.facebook.com/profile.php?id=61591849505301' target='_blank'>Facebook</a> • 
-            <a href='https://www.instagram.com/tecnologiawarde/' target='_blank'>Instagram</a> • 
-            <a href='https://www.tiktok.com/@tecnologiawarde' target='_blank'>TikTok</a> • 
-            <a href='https://discord.com/invite/vATQrTftJ' target='_blank'>Discord</a>
+        <p>Republica Dominicana &nbsp;|&nbsp;
+           <a href='https://www.facebook.com/profile.php?id=61591849505301' target='_blank'>Facebook</a> &nbsp;|&nbsp;
+           <a href='https://www.instagram.com/tecn.ologia891/' target='_blank'>Instagram</a> &nbsp;|&nbsp;
+           <a href='https://www.tiktok.com/@tecnologiawarde?lang=es-419' target='_blank'>TikTok</a> &nbsp;|&nbsp;
+           <a href='https://discord.com/invite/vATQrTftJ' target='_blank'>Discord</a>
         </p>
-        <p style='margin-top:16px; font-size:0.75rem; color:#4a5070;'>
-            © 2025 Tecnología Warde. Todos los derechos reservados.
-        </p>
+        <p style='margin-top:8px;'>&copy; {ano_actual} Tecnologia Warde. Todos los derechos reservados.</p>
+        <p style='font-size:0.72rem; color:#2a2f4a; margin-top:4px;'>Desarrollado con Python & Streamlit</p>
     </div>
     """,
     unsafe_allow_html=True,
