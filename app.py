@@ -534,7 +534,7 @@ with col_fund1:
         """
         <div class='founder-card'>
             <div class='founder-avatar'>?</div>
-            <div class='founder-name'>FUNDADOR 1</div>
+            <div class='founder-name'>CEO 1</div>
             <div class='founder-role'>Vision de negocio y desarrollo. Prefiere mantener su identidad reservada.</div>
             <span class='founder-badge badge-protected'>Identidad Protegida</span>
         </div>
@@ -561,7 +561,7 @@ with col_fund3:
         <div class='founder-card'>
             <div class='founder-avatar' style='font-size:22px; font-family:Orbitron,sans-serif; color:#fff;'>DS</div>
             <div class='founder-name'>DAWEL SONYIS</div>
-            <div class='founder-role'>CEO ejecutivo, Lider de las acciones y jefe del depto. de recursos humanos.</div>
+            <div class='founder-role'>FUNDADOR 3, Lider de las acciones y jefe del depto. de recursos humanos.</div>
             <span class='founder-badge badge-active'>Activo</span>
         </div>
         """,
