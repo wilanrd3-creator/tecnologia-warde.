@@ -498,11 +498,6 @@ with col_pay1:
         "**Transacciones Seguras via Banco BHD:** Procesamos todos nuestros cobros "
         "de forma directa y transparente mediante transferencias bancarias dominicanas."
     )
-with col_pay2:
-    st.warning(
-        "**Aviso de Seguridad:** Toda contratacion, presupuesto o detalle financiero "
-        "debe ser coordinado bajo la supervision directa de nuestros padres o tutores legales."
-    )
 
 # ============================================================
 # 10. GARANTIA DE SERVICIO (NUEVO)
@@ -553,7 +548,7 @@ with col_fund2:
         <div class='founder-card'>
             <div class='founder-avatar' style='font-size:22px; font-family:Orbitron,sans-serif; color:#fff;'>LM</div>
             <div class='founder-name'>LIAM MULLER</div>
-            <div class='founder-role'>Desarrollador de Sistemas, Co-Fundador y Especialista en Optimizacion Tecnologica.</div>
+            <div class='founder-role'>Co-Fundador.</div>
             <span class='founder-badge badge-active'>Activo</span>
         </div>
         """,
@@ -566,7 +561,7 @@ with col_fund3:
         <div class='founder-card'>
             <div class='founder-avatar' style='font-size:22px; font-family:Orbitron,sans-serif; color:#fff;'>DS</div>
             <div class='founder-name'>DAWEL SONYIS</div>
-            <div class='founder-role'>Administrador ejecutivo, Lider de las acciones y jefe del depto. de recursos humanos.</div>
+            <div class='founder-role'>CEO ejecutivo, Lider de las acciones y jefe del depto. de recursos humanos.</div>
             <span class='founder-badge badge-active'>Activo</span>
         </div>
         """,
