@@ -392,11 +392,11 @@ st.markdown(
 
 col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 with col_m1:
-    st.metric(label="Proyectos completados", value="50+", delta="Activos")
+    st.metric(label="Proyectos completados", value="0+", delta="Activos")
 with col_m2:
-    st.metric(label="Clientes satisfechos", value="40+", delta="Y creciendo")
+    st.metric(label="Clientes satisfechos", value="0+", delta="Y creciendo")
 with col_m3:
-    st.metric(label="Servicios disponibles", value="6", delta="Categorias")
+    st.metric(label="Servicios disponibles", value="100+", delta="Categorias")
 with col_m4:
     st.metric(label="Disponibilidad IA", value="24/7", delta="Sin parar")
 
