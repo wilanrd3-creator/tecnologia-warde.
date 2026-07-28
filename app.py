@@ -893,5 +893,3 @@ st.markdown(
 # 8. METRICAS / ESTADISTICAS PREMIUM
 # ============================================================
 st.markdown
-    """
-    
