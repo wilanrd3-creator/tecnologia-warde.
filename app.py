@@ -471,7 +471,7 @@ with st.expander("Siguenos en Nuestras Redes Sociales"):
             </a>
             <a href='https://www.instagram.com/tecnologiawarde/' target='_blank'
                class='social-link' style='background:#E1306C22; border-color:#E1306C55;'>
-               Instagram — @tecn.ologia891
+               Instagram — @tecnlogiawarde
             </a>
             <a href='https://www.tiktok.com/@tecnologiawarde?lang=es-419' target='_blank'
                class='social-link' style='background:#69C9D022; border-color:#69C9D055;'>
