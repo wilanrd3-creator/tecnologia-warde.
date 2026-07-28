@@ -726,39 +726,3 @@ else:
     for id_msg, nombre, texto, fecha in mensajes:
         with st.chat_message("user"):
             st.markdown(f"**{nombre}** · _{fecha}_")
-            st.write(texto)
-
-with col_moderar:
-    with st.popover("Panel de moderacion", use_container_width=True):
-        clave_mod = st.text_input("Contrasena de moderador", type="password", key="clave_moderador")
-        clave_correcta = st.secrets.get("MOD_PASSWORD")
-        if clave_mod and clave_correcta and clave_mod == clave_correcta:
-            st.success("Acceso concedido.")
-            for id_msg, nombre, texto, fecha in mensajes:
-                col_txt, col_btn = st.columns([4, 1])
-                col_txt.write(f"**{nombre}** ({fecha}): {texto[:60]}")
-                if col_btn.button("X", key=f"borrar_{id_msg}"):
-                    borrar_mensaje(id_msg)
-                    st.rerun()
-        elif clave_mod:
-            st.error("Contrasena incorrecta.")
-
-st.caption(
-    "Este es un espacio publico: cualquier visitante puede ver los mensajes. "
-    "Nunca compartas tu direccion, contrasenhas ni datos bancarios aqui."
-)
-
-# ============================================================
-# 14. FAQ — PREGUNTAS FRECUENTES
-# ============================================================
-st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Preguntas Frecuentes (FAQ)</h2>", unsafe_allow_html=True)
-
-faqs = 
-    (
-        "Cuanto tiempo tarda en estar listo mi proyecto?",
-        "Los tiempos varian segun el servicio: edicion de videos (24-48 horas), disenos graficos (24-72 horas) y paginas web (5-7 dias habiles). Te avisaremos antes de comenzar.",
-    ),
-    
-        "Como se realiza el pago?",
-        "A traves de transferencia bancaria direct
