@@ -496,7 +496,7 @@ st.markdown("<h2 style='color:#e0e6ff;'>Metodos de Pago</h2>", unsafe_allow_html
 col_pay1, col_pay2 = st.columns(2)
 with col_pay1:
     st.success(
-        "**Transacciones Seguras via Banco BHD:** Procesamos todos nuestros cobros "
+        "**Transacciones Seguras via Banco BHD, PAYPAL, BANRESERVAS, POPULAR:** Procesamos todos nuestros cobros "
         "de forma directa y transparente mediante transferencias bancarias dominicanas."
     )
 
