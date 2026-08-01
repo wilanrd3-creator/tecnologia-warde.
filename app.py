@@ -371,27 +371,7 @@ st.markdown(
     }
     section[data-testid="stSidebar"] { position: relative; z-index: 1; }
 
-    /* Scroll suave para los links de navegacion rapida */
     html { scroll-behavior: smooth; }
-
-    /* Links de navegacion rapida en el sidebar */
-    .nav-link {
-        display: block;
-        color: #cdd6f4;
-        text-decoration: none;
-        font-size: 0.92rem;
-        padding: 6px 8px;
-        border-radius: 6px;
-        margin-bottom: 2px;
-        transition: all 0.2s ease;
-        border-left: 2px solid transparent;
-    }
-    .nav-link:hover {
-        color: #00CFFF;
-        background: rgba(0,168,255,0.08);
-        border-left: 2px solid #00A8FF;
-        padding-left: 12px;
-    }
 
     /* ============================================================
        TIPOGRAFIA DEL NOMBRE — tratamiento especial sin cambiar el texto
@@ -429,112 +409,138 @@ st.markdown(
 #     position:fixed funcione de verdad y cubra toda la pantalla
 #     sin importar el scroll ni la estructura interna de Streamlit.
 #
-#     Concepto: "placa de circuito" — dos glows de esquina (marca)
-#     + trazos tipo PCB con pulsos de señal viajando por las líneas.
-#     Es deliberadamente más sobrio que un fondo de "blobs" al azar:
-#     un solo elemento con movimiento (el pulso), el resto estático.
+#     Concepto/firma visual: una red de nodos conectados que se
+#     mueve muy lentamente por el fondo — la metáfora de "conexion
+#     digital" que da sentido a una empresa de servicios tecnologicos,
+#     ejecutada con pocos nodos, movimiento lento y colores de marca,
+#     en vez de blobs difuminados genericos. Un solo guardián evita
+#     que Streamlit duplique el canvas y el loop de animacion en
+#     cada rerun (algo que rompe el rendimiento con el tiempo).
 # ============================================================
 components.html(
     """
     <script>
         try {
             const doc = window.parent.document;
-            const wrapperId = 'warde-bg-shapes-wrapper';
+            const win = window.parent;
+            const canvasId = 'warde-network-canvas';
 
-            if (!doc.getElementById(wrapperId)) {
-                const style = doc.createElement('style');
-                style.id = 'warde-bg-shapes-style';
-                style.innerHTML = `
-                    #${wrapperId} {
-                        position: fixed;
-                        inset: 0;
-                        z-index: 0;
-                        pointer-events: none;
-                        overflow: hidden;
+            if (!doc.getElementById(canvasId)) {
+
+                // ---- Glows de esquina, en los colores de marca ----
+                const glowStyle = doc.createElement('style');
+                glowStyle.id = 'warde-glow-style';
+                glowStyle.innerHTML = `
+                    #warde-glow-wrapper {
+                        position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
                     }
-                    /* Dos glows de esquina, fijos, en los colores de marca */
-                    #${wrapperId} .glow {
-                        position: absolute;
-                        border-radius: 50%;
-                        filter: blur(90px);
-                        opacity: 0.22;
+                    #warde-glow-wrapper .glow {
+                        position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.20;
                     }
-                    #${wrapperId} .glow-a {
-                        width: 460px; height: 460px; top: -160px; left: -140px;
+                    #warde-glow-wrapper .glow-a {
+                        width: 480px; height: 480px; top: -180px; left: -160px;
                         background: radial-gradient(circle, #00A8FF, transparent 70%);
                     }
-                    #${wrapperId} .glow-b {
-                        width: 420px; height: 420px; bottom: -180px; right: -140px;
+                    #warde-glow-wrapper .glow-b {
+                        width: 440px; height: 440px; bottom: -200px; right: -160px;
                         background: radial-gradient(circle, #7B2FBE, transparent 70%);
                     }
-                    /* Trazos de circuito: líneas finas quebradas, muy tenues */
-                    #${wrapperId} .pcb-lines {
-                        position: absolute; inset: 0;
-                        opacity: 0.35;
-                    }
-                    /* Pulso de señal viajando por una línea horizontal */
-                    #${wrapperId} .pulse {
-                        position: absolute;
-                        width: 6px; height: 6px;
-                        border-radius: 50%;
-                        background: #00CFFF;
-                        box-shadow: 0 0 10px 2px rgba(0,207,255,0.7);
-                    }
-                    #${wrapperId} .pulse-1 { top: 18%; animation: wardeTravelH 9s linear infinite; }
-                    #${wrapperId} .pulse-2 { top: 74%; animation: wardeTravelH 12s linear infinite reverse; }
-
-                    @keyframes wardeTravelH {
-                        0%   { left: -2%; opacity: 0; }
-                        8%   { opacity: 1; }
-                        92%  { opacity: 1; }
-                        100% { left: 102%; opacity: 0; }
-                    }
-                    @media (prefers-reduced-motion: reduce) {
-                        #${wrapperId} .pulse { animation: none; opacity: 0; }
-                    }
                 `;
-                doc.head.appendChild(style);
+                doc.head.appendChild(glowStyle);
+                const glowWrap = doc.createElement('div');
+                glowWrap.id = 'warde-glow-wrapper';
+                glowWrap.innerHTML = `<div class="glow glow-a"></div><div class="glow glow-b"></div>`;
+                doc.body.appendChild(glowWrap);
 
-                const wrapper = doc.createElement('div');
-                wrapper.id = wrapperId;
-                wrapper.innerHTML = `
-                    <div class="glow glow-a"></div>
-                    <div class="glow glow-b"></div>
-                    <svg class="pcb-lines" xmlns="http://www.w3.org/2000/svg">
-                        <line x1="0" y1="18%" x2="100%" y2="18%" stroke="#00A8FF" stroke-width="1" stroke-dasharray="1 7"></line>
-                        <line x1="0" y1="74%" x2="100%" y2="74%" stroke="#7B2FBE" stroke-width="1" stroke-dasharray="1 7"></line>
-                        <line x1="12%" y1="0" x2="12%" y2="100%" stroke="#00A8FF" stroke-width="1" stroke-dasharray="1 9"></line>
-                        <line x1="88%" y1="0" x2="88%" y2="100%" stroke="#7B2FBE" stroke-width="1" stroke-dasharray="1 9"></line>
-                    </svg>
-                    <div class="pulse pulse-1"></div>
-                    <div class="pulse pulse-2"></div>
-                `;
-                doc.body.appendChild(wrapper);
-            }
+                // ---- Canvas de la red de nodos ----
+                const canvas = doc.createElement('canvas');
+                canvas.id = canvasId;
+                canvas.style.position = 'fixed';
+                canvas.style.inset = '0';
+                canvas.style.zIndex = '0';
+                canvas.style.pointerEvents = 'none';
+                doc.body.appendChild(canvas);
 
-            // ---- NAVEGACION RAPIDA (sidebar) ----
-            // Streamlit renderiza el contenido dentro de un contenedor con
-            // su propio scroll interno (no es la ventana completa), asi que
-            // el salto nativo de "#ancla" del navegador no funciona: mueve
-            // la ventana, no ese contenedor. Interceptamos el clic y hacemos
-            // scrollIntoView sobre el elemento real dentro del documento.
-            if (!doc.body.dataset.wardeNavBound) {
-                doc.body.dataset.wardeNavBound = "1";
-                doc.body.addEventListener('click', function (e) {
-                    const link = e.target.closest ? e.target.closest('.nav-link') : null;
-                    if (!link) return;
-                    const href = link.getAttribute('href') || '';
-                    if (!href.startsWith('#')) return;
-                    const targetId = href.slice(1);
-                    const target = doc.getElementById(targetId);
-                    if (target) {
-                        e.preventDefault();
-                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        if (doc.defaultView && doc.defaultView.history) {
-                            doc.defaultView.history.replaceState(null, '', '#' + targetId);
+                const ctx = canvas.getContext('2d');
+                const colores = ['#00A8FF', '#7B2FBE', '#00CFFF'];
+                const reduceMotion = win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                let nodos = [];
+                function resize() {
+                    canvas.width = win.innerWidth;
+                    canvas.height = win.innerHeight;
+                }
+                function crearNodos() {
+                    const cantidad = Math.max(18, Math.min(42, Math.floor((win.innerWidth * win.innerHeight) / 45000)));
+                    nodos = Array.from({ length: cantidad }, () => ({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 0.22,
+                        vy: (Math.random() - 0.5) * 0.22,
+                        r: Math.random() * 1.6 + 1.2,
+                        color: colores[Math.floor(Math.random() * colores.length)],
+                    }));
+                }
+
+                resize();
+                crearNodos();
+
+                const maxDist = 150;
+
+                function dibujarFrame() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    for (let i = 0; i < nodos.length; i++) {
+                        for (let j = i + 1; j < nodos.length; j++) {
+                            const a = nodos[i], b = nodos[j];
+                            const dx = a.x - b.x, dy = a.y - b.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < maxDist) {
+                                ctx.strokeStyle = `rgba(0,168,255,${0.16 * (1 - dist / maxDist)})`;
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(a.x, a.y);
+                                ctx.lineTo(b.x, b.y);
+                                ctx.stroke();
+                            }
                         }
                     }
-                }, true);
+                    for (const n of nodos) {
+                        ctx.beginPath();
+                        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+                        ctx.fillStyle = n.color;
+                        ctx.globalAlpha = 0.55;
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+                }
+
+                function paso() {
+                    for (const n of nodos) {
+                        n.x += n.vx;
+                        n.y += n.vy;
+                        if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+                        if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+                    }
+                    dibujarFrame();
+                    if (!reduceMotion) {
+                        win.requestAnimationFrame(paso);
+                    }
+                }
+
+                win.addEventListener('resize', function () {
+                    resize();
+                    crearNodos();
+                    if (reduceMotion) dibujarFrame();
+                });
+
+                // Si el usuario prefiere menos movimiento, dibujamos un solo
+                // fotograma estatico y no arrancamos el bucle de animacion.
+                if (reduceMotion) {
+                    dibujarFrame();
+                } else {
+                    paso();
+                }
             }
         } catch (e) {
             console.log('No se pudo inyectar el fondo:', e);
