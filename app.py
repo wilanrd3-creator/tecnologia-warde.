@@ -86,6 +86,29 @@ st.markdown(
         letter-spacing: 1px;
     }
 
+    /* Acento animado bajo cada titulo de seccion (h2), sin tocar cada seccion */
+    h2 {
+        position: relative;
+        display: inline-block;
+        padding-bottom: 8px;
+        animation: fadeInUp 0.6s ease both;
+    }
+    h2::after {
+        content: '';
+        position: absolute;
+        left: 0; bottom: 0;
+        height: 3px;
+        width: 46px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #00A8FF, #7B2FBE);
+        transition: width 0.4s ease;
+    }
+    h2:hover::after { width: 100%; }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
     /* ---- Separador personalizado ---- */
     .divider {
         width: 100%;
@@ -316,7 +339,147 @@ st.markdown(
         .social-link { display: block; margin: 6px 0; text-align: center; }
         [data-testid="stMetric"] { padding: 8px 10px; }
     }
+
+    /* ============================================================
+       FONDO ANIMADO — gradiente en movimiento + formas geometricas
+       ============================================================ */
+
+    /* El gradiente base ahora se mueve lentamente en vez de ser estatico */
+    .stApp {
+        background: linear-gradient(135deg, #0F111A 0%, #141828 30%, #1a1030 55%, #0A0D16 100%);
+        background-size: 300% 300%;
+        animation: gradientShift 18s ease infinite;
+    }
+    @keyframes gradientShift {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Capa fija con formas flotantes, detras de todo el contenido */
+    .bg-shapes {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        z-index: 0;
+        pointer-events: none;
+    }
+    .bg-shapes .shape {
+        position: absolute;
+        opacity: 0.28;
+        filter: blur(2px);
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+    }
+    .shape-blob {
+        border-radius: 50%;
+        filter: blur(50px);
+    }
+    .shape-1 {
+        width: 340px; height: 340px;
+        top: -80px; left: -60px;
+        background: radial-gradient(circle, #00A8FF, transparent 70%);
+        animation: floatA 22s infinite;
+    }
+    .shape-2 {
+        width: 260px; height: 260px;
+        top: 40%; right: -80px;
+        background: radial-gradient(circle, #7B2FBE, transparent 70%);
+        animation: floatB 26s infinite;
+    }
+    .shape-3 {
+        width: 200px; height: 200px;
+        bottom: -60px; left: 15%;
+        background: radial-gradient(circle, #00CFFF, transparent 70%);
+        animation: floatC 20s infinite;
+    }
+    .shape-4 {
+        width: 0; height: 0;
+        top: 15%; left: 60%;
+        border-left: 90px solid transparent;
+        border-right: 90px solid transparent;
+        border-bottom: 150px solid rgba(123,47,190,0.18);
+        filter: blur(4px);
+        animation: rotateFloat 30s linear infinite;
+    }
+    .shape-5 {
+        width: 130px; height: 130px;
+        top: 65%; left: 5%;
+        background: rgba(0,168,255,0.14);
+        border-radius: 24px;
+        transform: rotate(20deg);
+        filter: blur(3px);
+        animation: rotateFloat 24s linear infinite reverse;
+    }
+    .shape-6 {
+        width: 180px; height: 180px;
+        top: 5%; right: 10%;
+        background: rgba(0,207,255,0.12);
+        border-radius: 30%;
+        filter: blur(3px);
+        animation: floatB 19s infinite reverse;
+    }
+
+    @keyframes floatA {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(60px, 80px) scale(1.15); }
+    }
+    @keyframes floatB {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(-70px, 50px) scale(0.9); }
+    }
+    @keyframes floatC {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(40px, -60px) scale(1.1); }
+    }
+    @keyframes rotateFloat {
+        0%   { transform: rotate(0deg) translateY(0px); }
+        50%  { transform: rotate(180deg) translateY(-30px); }
+        100% { transform: rotate(360deg) translateY(0px); }
+    }
+
+    /* Aseguramos que el contenido real quede POR ENCIMA de las formas */
+    section.main > div.block-container {
+        position: relative;
+        z-index: 1;
+    }
+    section[data-testid="stSidebar"] { position: relative; z-index: 1; }
+
+    /* ============================================================
+       TIPOGRAFIA DEL NOMBRE — tratamiento especial sin cambiar el texto
+       ============================================================ */
+    .brand-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2.6rem;
+        font-weight: 900;
+        margin: 0;
+        line-height: 1.1;
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, #00A8FF, #7B2FBE, #00CFFF, #00A8FF);
+        background-size: 300% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shine 6s linear infinite;
+        text-shadow: 0 0 40px rgba(0,168,255,0.25);
+    }
+    @keyframes shine {
+        0%   { background-position: 0% 50%; }
+        100% { background-position: 300% 50%; }
+    }
+    @media (max-width: 640px) {
+        .brand-title { font-size: 1.9rem; letter-spacing: 1.5px; }
+    }
     </style>
+
+    <div class="bg-shapes">
+        <div class="shape shape-blob shape-1"></div>
+        <div class="shape shape-blob shape-2"></div>
+        <div class="shape shape-blob shape-3"></div>
+        <div class="shape shape-4"></div>
+        <div class="shape shape-5"></div>
+        <div class="shape shape-blob shape-6"></div>
+    </div>
     """,
     unsafe_allow_html=True,
 )
@@ -405,9 +568,7 @@ st.markdown(
                     letter-spacing:2px; margin-bottom:14px;'>
             VERIFICADO | REPUBLICA DOMINICANA
         </div>
-        <h1 style='color:#00A8FF; font-family:Orbitron,sans-serif;
-                   font-size:2.4rem; margin:0; line-height:1.1;
-                   text-shadow: 0 0 30px rgba(0,168,255,0.45);'>
+        <h1 class='brand-title'>
             TECNOLOGIA WARDE
         </h1>
         <p style='color:#7B8DB0; font-size:1.05rem; margin-top:8px;'>
