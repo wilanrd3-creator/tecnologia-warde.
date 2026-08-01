@@ -511,6 +511,31 @@ components.html(
                 `;
                 doc.body.appendChild(wrapper);
             }
+
+            // ---- NAVEGACION RAPIDA (sidebar) ----
+            // Streamlit renderiza el contenido dentro de un contenedor con
+            // su propio scroll interno (no es la ventana completa), asi que
+            // el salto nativo de "#ancla" del navegador no funciona: mueve
+            // la ventana, no ese contenedor. Interceptamos el clic y hacemos
+            // scrollIntoView sobre el elemento real dentro del documento.
+            if (!doc.body.dataset.wardeNavBound) {
+                doc.body.dataset.wardeNavBound = "1";
+                doc.body.addEventListener('click', function (e) {
+                    const link = e.target.closest ? e.target.closest('.nav-link') : null;
+                    if (!link) return;
+                    const href = link.getAttribute('href') || '';
+                    if (!href.startsWith('#')) return;
+                    const targetId = href.slice(1);
+                    const target = doc.getElementById(targetId);
+                    if (target) {
+                        e.preventDefault();
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        if (doc.defaultView && doc.defaultView.history) {
+                            doc.defaultView.history.replaceState(null, '', '#' + targetId);
+                        }
+                    }
+                }, true);
+            }
         } catch (e) {
             console.log('No se pudo inyectar el fondo:', e);
         }
