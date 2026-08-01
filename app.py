@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import urllib.parse
 import sqlite3
+import hmac
 from datetime import datetime
 import time
 
@@ -341,19 +342,26 @@ st.markdown(
     }
 
     /* ============================================================
-       FONDO ANIMADO — gradiente en movimiento + formas geometricas
+       FONDO — base tecnica: gradiente lento + retícula de circuito
+       (en vez de blobs difuminados genéricos, usamos una trama de
+       puntos tipo placa de circuito, coherente con "Tecnologia Warde")
        ============================================================ */
 
-    /* El gradiente base ahora se mueve lentamente en vez de ser estatico */
     .stApp {
-        background: linear-gradient(135deg, #0F111A 0%, #141828 30%, #1a1030 55%, #0A0D16 100%);
-        background-size: 300% 300%;
-        animation: gradientShift 18s ease infinite;
+        background-color: #0A0D16;
+        background-image:
+            radial-gradient(circle at 1px 1px, rgba(0,168,255,0.16) 1px, transparent 0),
+            linear-gradient(135deg, #0F111A 0%, #141828 30%, #16112a 55%, #0A0D16 100%);
+        background-size: 26px 26px, 300% 300%;
+        animation: gradientShift 22s ease infinite;
     }
     @keyframes gradientShift {
-        0%   { background-position: 0% 50%; }
-        50%  { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        0%   { background-position: 0 0, 0% 50%; }
+        50%  { background-position: 0 0, 100% 50%; }
+        100% { background-position: 0 0, 0% 50%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .stApp { animation: none; }
     }
 
     /* Aseguramos que el contenido real quede POR ENCIMA de las formas */
@@ -416,10 +424,15 @@ st.markdown(
 )
 
 # ============================================================
-# 2B. FONDO ANIMADO REAL — inyectado directo al documento del
-#     navegador (no al contenedor interno de Streamlit), para que
-#     el position:fixed funcione de verdad y cubra toda la pantalla
+# 2B. FONDO REAL — inyectado directo al documento del navegador
+#     (no al contenedor interno de Streamlit), para que el
+#     position:fixed funcione de verdad y cubra toda la pantalla
 #     sin importar el scroll ni la estructura interna de Streamlit.
+#
+#     Concepto: "placa de circuito" — dos glows de esquina (marca)
+#     + trazos tipo PCB con pulsos de señal viajando por las líneas.
+#     Es deliberadamente más sobrio que un fondo de "blobs" al azar:
+#     un solo elemento con movimiento (el pulso), el resto estático.
 # ============================================================
 components.html(
     """
@@ -428,7 +441,6 @@ components.html(
             const doc = window.parent.document;
             const wrapperId = 'warde-bg-shapes-wrapper';
 
-            // Evita duplicar el fondo si Streamlit vuelve a correr el script
             if (!doc.getElementById(wrapperId)) {
                 const style = doc.createElement('style');
                 style.id = 'warde-bg-shapes-style';
@@ -440,70 +452,45 @@ components.html(
                         pointer-events: none;
                         overflow: hidden;
                     }
-                    #${wrapperId} .shape {
+                    /* Dos glows de esquina, fijos, en los colores de marca */
+                    #${wrapperId} .glow {
                         position: absolute;
-                        opacity: 0.30;
-                        animation-timing-function: ease-in-out;
-                        animation-iteration-count: infinite;
-                    }
-                    #${wrapperId} .blob {
                         border-radius: 50%;
-                        filter: blur(55px);
+                        filter: blur(90px);
+                        opacity: 0.22;
                     }
-                    #${wrapperId} .s1 {
-                        width: 380px; height: 380px; top: -100px; left: -80px;
+                    #${wrapperId} .glow-a {
+                        width: 460px; height: 460px; top: -160px; left: -140px;
                         background: radial-gradient(circle, #00A8FF, transparent 70%);
-                        animation: wardeFloatA 22s infinite;
                     }
-                    #${wrapperId} .s2 {
-                        width: 300px; height: 300px; top: 35%; right: -100px;
+                    #${wrapperId} .glow-b {
+                        width: 420px; height: 420px; bottom: -180px; right: -140px;
                         background: radial-gradient(circle, #7B2FBE, transparent 70%);
-                        animation: wardeFloatB 26s infinite;
                     }
-                    #${wrapperId} .s3 {
-                        width: 240px; height: 240px; bottom: -80px; left: 12%;
-                        background: radial-gradient(circle, #00CFFF, transparent 70%);
-                        animation: wardeFloatC 20s infinite;
+                    /* Trazos de circuito: líneas finas quebradas, muy tenues */
+                    #${wrapperId} .pcb-lines {
+                        position: absolute; inset: 0;
+                        opacity: 0.35;
                     }
-                    #${wrapperId} .s4 {
-                        width: 0; height: 0; top: 12%; left: 55%;
-                        border-left: 100px solid transparent;
-                        border-right: 100px solid transparent;
-                        border-bottom: 170px solid rgba(123,47,190,0.20);
-                        filter: blur(4px);
-                        animation: wardeRotate 30s linear infinite;
+                    /* Pulso de señal viajando por una línea horizontal */
+                    #${wrapperId} .pulse {
+                        position: absolute;
+                        width: 6px; height: 6px;
+                        border-radius: 50%;
+                        background: #00CFFF;
+                        box-shadow: 0 0 10px 2px rgba(0,207,255,0.7);
                     }
-                    #${wrapperId} .s5 {
-                        width: 150px; height: 150px; top: 62%; left: 6%;
-                        background: rgba(0,168,255,0.16);
-                        border-radius: 26px;
-                        transform: rotate(20deg);
-                        filter: blur(3px);
-                        animation: wardeRotate 24s linear infinite reverse;
+                    #${wrapperId} .pulse-1 { top: 18%; animation: wardeTravelH 9s linear infinite; }
+                    #${wrapperId} .pulse-2 { top: 74%; animation: wardeTravelH 12s linear infinite reverse; }
+
+                    @keyframes wardeTravelH {
+                        0%   { left: -2%; opacity: 0; }
+                        8%   { opacity: 1; }
+                        92%  { opacity: 1; }
+                        100% { left: 102%; opacity: 0; }
                     }
-                    #${wrapperId} .s6 {
-                        width: 200px; height: 200px; top: 6%; right: 12%;
-                        background: rgba(0,207,255,0.14);
-                        border-radius: 30%;
-                        filter: blur(3px);
-                        animation: wardeFloatB 19s infinite reverse;
-                    }
-                    @keyframes wardeFloatA {
-                        0%, 100% { transform: translate(0,0) scale(1); }
-                        50%      { transform: translate(70px, 90px) scale(1.15); }
-                    }
-                    @keyframes wardeFloatB {
-                        0%, 100% { transform: translate(0,0) scale(1); }
-                        50%      { transform: translate(-80px, 60px) scale(0.9); }
-                    }
-                    @keyframes wardeFloatC {
-                        0%, 100% { transform: translate(0,0) scale(1); }
-                        50%      { transform: translate(50px, -70px) scale(1.1); }
-                    }
-                    @keyframes wardeRotate {
-                        0%   { transform: rotate(0deg) translateY(0px); }
-                        50%  { transform: rotate(180deg) translateY(-35px); }
-                        100% { transform: rotate(360deg) translateY(0px); }
+                    @media (prefers-reduced-motion: reduce) {
+                        #${wrapperId} .pulse { animation: none; opacity: 0; }
                     }
                 `;
                 doc.head.appendChild(style);
@@ -511,17 +498,21 @@ components.html(
                 const wrapper = doc.createElement('div');
                 wrapper.id = wrapperId;
                 wrapper.innerHTML = `
-                    <div class="shape blob s1"></div>
-                    <div class="shape blob s2"></div>
-                    <div class="shape blob s3"></div>
-                    <div class="shape s4"></div>
-                    <div class="shape s5"></div>
-                    <div class="shape blob s6"></div>
+                    <div class="glow glow-a"></div>
+                    <div class="glow glow-b"></div>
+                    <svg class="pcb-lines" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="0" y1="18%" x2="100%" y2="18%" stroke="#00A8FF" stroke-width="1" stroke-dasharray="1 7"></line>
+                        <line x1="0" y1="74%" x2="100%" y2="74%" stroke="#7B2FBE" stroke-width="1" stroke-dasharray="1 7"></line>
+                        <line x1="12%" y1="0" x2="12%" y2="100%" stroke="#00A8FF" stroke-width="1" stroke-dasharray="1 9"></line>
+                        <line x1="88%" y1="0" x2="88%" y2="100%" stroke="#7B2FBE" stroke-width="1" stroke-dasharray="1 9"></line>
+                    </svg>
+                    <div class="pulse pulse-1"></div>
+                    <div class="pulse pulse-2"></div>
                 `;
                 doc.body.appendChild(wrapper);
             }
         } catch (e) {
-            console.log('No se pudo inyectar el fondo animado:', e);
+            console.log('No se pudo inyectar el fondo:', e);
         }
     </script>
     """,
@@ -1064,7 +1055,7 @@ with col_moderar:
     with st.popover("Panel de moderacion", use_container_width=True):
         clave_mod = st.text_input("Contrasena de moderador", type="password", key="clave_moderador")
         clave_correcta = st.secrets.get("MOD_PASSWORD")
-        if clave_mod and clave_correcta and clave_mod == clave_correcta:
+        if clave_mod and clave_correcta and hmac.compare_digest(clave_mod, clave_correcta):
             st.success("Acceso concedido.")
             for id_msg, nombre, texto, fecha in mensajes:
                 col_txt, col_btn = st.columns([4, 1])
@@ -1192,7 +1183,7 @@ st.markdown(
         </p>
         <p>Republica Dominicana &nbsp;|&nbsp;
            <a href='https://www.facebook.com/profile.php?id=61591849505301' target='_blank'>Facebook</a> &nbsp;|&nbsp;
-           <a href='https://www.instagram.com/tecn.ologia891/' target='_blank'>Instagram</a> &nbsp;|&nbsp;
+           <a href='https://www.instagram.com/tecnologiawarde/' target='_blank'>Instagram</a> &nbsp;|&nbsp;
            <a href='https://www.tiktok.com/@tecnologiawarde?lang=es-419' target='_blank'>TikTok</a> &nbsp;|&nbsp;
            <a href='https://discord.com/invite/vATQrTftJ' target='_blank'>Discord</a>
         </p>
