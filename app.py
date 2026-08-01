@@ -356,94 +356,34 @@ st.markdown(
         100% { background-position: 0% 50%; }
     }
 
-    /* Capa fija con formas flotantes, detras de todo el contenido */
-    .bg-shapes {
-        position: fixed;
-        inset: 0;
-        overflow: hidden;
-        z-index: 0;
-        pointer-events: none;
-    }
-    .bg-shapes .shape {
-        position: absolute;
-        opacity: 0.28;
-        filter: blur(2px);
-        animation-timing-function: ease-in-out;
-        animation-iteration-count: infinite;
-    }
-    .shape-blob {
-        border-radius: 50%;
-        filter: blur(50px);
-    }
-    .shape-1 {
-        width: 340px; height: 340px;
-        top: -80px; left: -60px;
-        background: radial-gradient(circle, #00A8FF, transparent 70%);
-        animation: floatA 22s infinite;
-    }
-    .shape-2 {
-        width: 260px; height: 260px;
-        top: 40%; right: -80px;
-        background: radial-gradient(circle, #7B2FBE, transparent 70%);
-        animation: floatB 26s infinite;
-    }
-    .shape-3 {
-        width: 200px; height: 200px;
-        bottom: -60px; left: 15%;
-        background: radial-gradient(circle, #00CFFF, transparent 70%);
-        animation: floatC 20s infinite;
-    }
-    .shape-4 {
-        width: 0; height: 0;
-        top: 15%; left: 60%;
-        border-left: 90px solid transparent;
-        border-right: 90px solid transparent;
-        border-bottom: 150px solid rgba(123,47,190,0.18);
-        filter: blur(4px);
-        animation: rotateFloat 30s linear infinite;
-    }
-    .shape-5 {
-        width: 130px; height: 130px;
-        top: 65%; left: 5%;
-        background: rgba(0,168,255,0.14);
-        border-radius: 24px;
-        transform: rotate(20deg);
-        filter: blur(3px);
-        animation: rotateFloat 24s linear infinite reverse;
-    }
-    .shape-6 {
-        width: 180px; height: 180px;
-        top: 5%; right: 10%;
-        background: rgba(0,207,255,0.12);
-        border-radius: 30%;
-        filter: blur(3px);
-        animation: floatB 19s infinite reverse;
-    }
-
-    @keyframes floatA {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        50%      { transform: translate(60px, 80px) scale(1.15); }
-    }
-    @keyframes floatB {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        50%      { transform: translate(-70px, 50px) scale(0.9); }
-    }
-    @keyframes floatC {
-        0%, 100% { transform: translate(0, 0) scale(1); }
-        50%      { transform: translate(40px, -60px) scale(1.1); }
-    }
-    @keyframes rotateFloat {
-        0%   { transform: rotate(0deg) translateY(0px); }
-        50%  { transform: rotate(180deg) translateY(-30px); }
-        100% { transform: rotate(360deg) translateY(0px); }
-    }
-
     /* Aseguramos que el contenido real quede POR ENCIMA de las formas */
     section.main > div.block-container {
         position: relative;
         z-index: 1;
     }
     section[data-testid="stSidebar"] { position: relative; z-index: 1; }
+
+    /* Scroll suave para los links de navegacion rapida */
+    html { scroll-behavior: smooth; }
+
+    /* Links de navegacion rapida en el sidebar */
+    .nav-link {
+        display: block;
+        color: #cdd6f4;
+        text-decoration: none;
+        font-size: 0.92rem;
+        padding: 6px 8px;
+        border-radius: 6px;
+        margin-bottom: 2px;
+        transition: all 0.2s ease;
+        border-left: 2px solid transparent;
+    }
+    .nav-link:hover {
+        color: #00CFFF;
+        background: rgba(0,168,255,0.08);
+        border-left: 2px solid #00A8FF;
+        padding-left: 12px;
+    }
 
     /* ============================================================
        TIPOGRAFIA DEL NOMBRE — tratamiento especial sin cambiar el texto
@@ -471,17 +411,121 @@ st.markdown(
         .brand-title { font-size: 1.9rem; letter-spacing: 1.5px; }
     }
     </style>
-
-    <div class="bg-shapes">
-        <div class="shape shape-blob shape-1"></div>
-        <div class="shape shape-blob shape-2"></div>
-        <div class="shape shape-blob shape-3"></div>
-        <div class="shape shape-4"></div>
-        <div class="shape shape-5"></div>
-        <div class="shape shape-blob shape-6"></div>
-    </div>
     """,
     unsafe_allow_html=True,
+)
+
+# ============================================================
+# 2B. FONDO ANIMADO REAL — inyectado directo al documento del
+#     navegador (no al contenedor interno de Streamlit), para que
+#     el position:fixed funcione de verdad y cubra toda la pantalla
+#     sin importar el scroll ni la estructura interna de Streamlit.
+# ============================================================
+components.html(
+    """
+    <script>
+        try {
+            const doc = window.parent.document;
+            const wrapperId = 'warde-bg-shapes-wrapper';
+
+            // Evita duplicar el fondo si Streamlit vuelve a correr el script
+            if (!doc.getElementById(wrapperId)) {
+                const style = doc.createElement('style');
+                style.id = 'warde-bg-shapes-style';
+                style.innerHTML = `
+                    #${wrapperId} {
+                        position: fixed;
+                        inset: 0;
+                        z-index: 0;
+                        pointer-events: none;
+                        overflow: hidden;
+                    }
+                    #${wrapperId} .shape {
+                        position: absolute;
+                        opacity: 0.30;
+                        animation-timing-function: ease-in-out;
+                        animation-iteration-count: infinite;
+                    }
+                    #${wrapperId} .blob {
+                        border-radius: 50%;
+                        filter: blur(55px);
+                    }
+                    #${wrapperId} .s1 {
+                        width: 380px; height: 380px; top: -100px; left: -80px;
+                        background: radial-gradient(circle, #00A8FF, transparent 70%);
+                        animation: wardeFloatA 22s infinite;
+                    }
+                    #${wrapperId} .s2 {
+                        width: 300px; height: 300px; top: 35%; right: -100px;
+                        background: radial-gradient(circle, #7B2FBE, transparent 70%);
+                        animation: wardeFloatB 26s infinite;
+                    }
+                    #${wrapperId} .s3 {
+                        width: 240px; height: 240px; bottom: -80px; left: 12%;
+                        background: radial-gradient(circle, #00CFFF, transparent 70%);
+                        animation: wardeFloatC 20s infinite;
+                    }
+                    #${wrapperId} .s4 {
+                        width: 0; height: 0; top: 12%; left: 55%;
+                        border-left: 100px solid transparent;
+                        border-right: 100px solid transparent;
+                        border-bottom: 170px solid rgba(123,47,190,0.20);
+                        filter: blur(4px);
+                        animation: wardeRotate 30s linear infinite;
+                    }
+                    #${wrapperId} .s5 {
+                        width: 150px; height: 150px; top: 62%; left: 6%;
+                        background: rgba(0,168,255,0.16);
+                        border-radius: 26px;
+                        transform: rotate(20deg);
+                        filter: blur(3px);
+                        animation: wardeRotate 24s linear infinite reverse;
+                    }
+                    #${wrapperId} .s6 {
+                        width: 200px; height: 200px; top: 6%; right: 12%;
+                        background: rgba(0,207,255,0.14);
+                        border-radius: 30%;
+                        filter: blur(3px);
+                        animation: wardeFloatB 19s infinite reverse;
+                    }
+                    @keyframes wardeFloatA {
+                        0%, 100% { transform: translate(0,0) scale(1); }
+                        50%      { transform: translate(70px, 90px) scale(1.15); }
+                    }
+                    @keyframes wardeFloatB {
+                        0%, 100% { transform: translate(0,0) scale(1); }
+                        50%      { transform: translate(-80px, 60px) scale(0.9); }
+                    }
+                    @keyframes wardeFloatC {
+                        0%, 100% { transform: translate(0,0) scale(1); }
+                        50%      { transform: translate(50px, -70px) scale(1.1); }
+                    }
+                    @keyframes wardeRotate {
+                        0%   { transform: rotate(0deg) translateY(0px); }
+                        50%  { transform: rotate(180deg) translateY(-35px); }
+                        100% { transform: rotate(360deg) translateY(0px); }
+                    }
+                `;
+                doc.head.appendChild(style);
+
+                const wrapper = doc.createElement('div');
+                wrapper.id = wrapperId;
+                wrapper.innerHTML = `
+                    <div class="shape blob s1"></div>
+                    <div class="shape blob s2"></div>
+                    <div class="shape blob s3"></div>
+                    <div class="shape s4"></div>
+                    <div class="shape s5"></div>
+                    <div class="shape blob s6"></div>
+                `;
+                doc.body.appendChild(wrapper);
+            }
+        } catch (e) {
+            console.log('No se pudo inyectar el fondo animado:', e);
+        }
+    </script>
+    """,
+    height=0,
 )
 
 # ============================================================
@@ -492,14 +536,19 @@ with st.sidebar:
         "<h3 style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:1rem;'>NAVEGACION RAPIDA</h3>",
         unsafe_allow_html=True,
     )
-    st.markdown("- Servicios")
-    st.markdown("- Metodos de Pago")
-    st.markdown("- Junta Directiva")
-    st.markdown("- Chat IA 24/7")
-    st.markdown("- Comunidad")
-    st.markdown("- Testimonios")
-    st.markdown("- Contacto")
-    st.markdown("- FAQ")
+    st.markdown(
+        """
+        <a href="#servicios" class="nav-link">Servicios</a>
+        <a href="#pagos" class="nav-link">Metodos de Pago</a>
+        <a href="#junta" class="nav-link">Junta Directiva</a>
+        <a href="#chat-ia" class="nav-link">Chat IA 24/7</a>
+        <a href="#testimonios" class="nav-link">Testimonios</a>
+        <a href="#comunidad" class="nav-link">Comunidad</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="#contacto" class="nav-link">Contacto</a>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -614,7 +663,7 @@ with col_m4:
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown(
-    "<h2 style='color:#e0e6ff;'>Catalogo de Servicios</h2>",
+    "<h2 id='servicios' style='color:#e0e6ff;'>Catalogo de Servicios</h2>",
     unsafe_allow_html=True,
 )
 st.write("Haz clic en cada categoria para ver los detalles y precios oficiales:")
@@ -699,7 +748,7 @@ with st.expander("Siguenos en Nuestras Redes Sociales"):
 # 9. METODOS DE PAGO
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Metodos de Pago</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='pagos' style='color:#e0e6ff;'>Metodos de Pago</h2>", unsafe_allow_html=True)
 
 col_pay1, col_pay2 = st.columns(2)
 with col_pay1:
@@ -734,7 +783,7 @@ st.markdown(
 # 11. JUNTA DIRECTIVA — Tarjetas visuales
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Junta Directiva</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='junta' style='color:#e0e6ff;'>Junta Directiva</h2>", unsafe_allow_html=True)
 
 col_fund1, col_fund2, col_fund3 = st.columns(3)
 
@@ -781,7 +830,7 @@ with col_fund3:
 # 12. CHAT DE IA 24/7
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Chat IA Warde — Disponible 24/7</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='chat-ia' style='color:#e0e6ff;'>Chat IA Warde — Disponible 24/7</h2>", unsafe_allow_html=True)
 st.write("Nuestro asistente virtual esta activo a toda hora, incluso cuando el equipo humano no esta conectado:")
 
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
@@ -874,7 +923,7 @@ with col_chat2:
 # 13. TESTIMONIOS — NUEVO (el CSS ya existía pero nunca se usaba)
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Lo Que Dicen Nuestros Clientes</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='testimonios' style='color:#e0e6ff;'>Lo Que Dicen Nuestros Clientes</h2>", unsafe_allow_html=True)
 st.caption("Edita estos testimonios con reseñas reales a medida que las recibas — los ficticios pueden dañar tu credibilidad.")
 
 testimonios = [
@@ -901,7 +950,7 @@ for col, (texto_t, autor_t, estrellas) in zip([col_t1, col_t2, col_t3], testimon
 # 14. CHAT GLOBAL DE LA COMUNIDAD
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Chat Global de la Comunidad</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='comunidad' style='color:#e0e6ff;'>Chat Global de la Comunidad</h2>", unsafe_allow_html=True)
 st.write("Deja tu mensaje para que lo vean todos los visitantes de la pagina:")
 
 DB_PATH = "chat_global.db"
@@ -1035,7 +1084,7 @@ st.caption(
 # 15. FAQ — PREGUNTAS FRECUENTES
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Preguntas Frecuentes (FAQ)</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='faq' style='color:#e0e6ff;'>Preguntas Frecuentes (FAQ)</h2>", unsafe_allow_html=True)
 
 faqs = [
     (
@@ -1068,7 +1117,7 @@ for pregunta_faq, respuesta_faq in faqs:
 # 16. FORMULARIO DE CONTACTO POR WHATSAPP
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-st.markdown("<h2 style='color:#e0e6ff;'>Contactanos y Cotiza tu Proyecto</h2>", unsafe_allow_html=True)
+st.markdown("<h2 id='contacto' style='color:#e0e6ff;'>Contactanos y Cotiza tu Proyecto</h2>", unsafe_allow_html=True)
 st.write("Completa tus datos para generar tu orden de servicio:")
 
 telefono_warde = "18094523054"
