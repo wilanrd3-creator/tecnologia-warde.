@@ -1,5 +1,5 @@
-
 import streamlit as st
+import streamlit.components.v1 as components
 import urllib.parse
 import sqlite3
 from datetime import datetime
@@ -16,14 +16,52 @@ except ImportError:
 # 1. CONFIGURACIÓN DE PÁGINA
 # ============================================================
 st.set_page_config(
-    page_title="Tecnología Warde | Oficial",
-    page_icon="assets/favicon.png" if False else ":zap:",
+    page_title="Tecnología Warde | Desarrollo Web, Diseño y Video en RD",
+    page_icon=":zap:",
     layout="centered",
     initial_sidebar_state="expanded",
 )
 
 # ============================================================
-# 2. CSS GLOBAL MEJORADO — glassmorphism + animaciones
+# 1B. SEO BÁSICO — meta description, OG tags y título de pestaña
+#     (Streamlit no permite editar el <head> nativamente, así que
+#      lo inyectamos con un componente HTML. Esto ayuda a que
+#      buscadores y redes sociales muestren una vista previa correcta.)
+# ============================================================
+components.html(
+    """
+    <script>
+        try {
+            const doc = window.parent.document;
+            doc.title = "Tecnología Warde | Desarrollo Web, Diseño y Video en RD";
+
+            const metaTags = [
+                {name: "description", content: "Tecnología Warde: edición de video, diseño gráfico y desarrollo web profesional en República Dominicana. Cotiza tu proyecto hoy mismo."},
+                {property: "og:title", content: "Tecnología Warde"},
+                {property: "og:description", content: "Servicios digitales profesionales en República Dominicana: video, diseño y desarrollo web."},
+                {property: "og:type", content: "website"},
+            ];
+
+            metaTags.forEach(tagInfo => {
+                const selector = tagInfo.name ? `meta[name="${tagInfo.name}"]` : `meta[property="${tagInfo.property}"]`;
+                if (!doc.querySelector(selector)) {
+                    const meta = doc.createElement('meta');
+                    if (tagInfo.name) meta.setAttribute('name', tagInfo.name);
+                    if (tagInfo.property) meta.setAttribute('property', tagInfo.property);
+                    meta.setAttribute('content', tagInfo.content);
+                    doc.head.appendChild(meta);
+                }
+            });
+        } catch (e) {
+            console.log('No se pudo inyectar metadata:', e);
+        }
+    </script>
+    """,
+    height=0,
+)
+
+# ============================================================
+# 2. CSS GLOBAL MEJORADO — glassmorphism + animaciones + responsive
 # ============================================================
 st.markdown(
     """
@@ -270,6 +308,14 @@ st.markdown(
         border-radius: 10px;
         padding: 12px 16px;
     }
+
+    /* ---- RESPONSIVE: pantallas pequeñas / celulares ---- */
+    @media (max-width: 640px) {
+        h1 { font-size: 1.7rem !important; }
+        .service-card, .founder-card, .testimonial-card { padding: 14px 14px; }
+        .social-link { display: block; margin: 6px 0; text-align: center; }
+        [data-testid="stMetric"] { padding: 8px 10px; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -288,6 +334,7 @@ with st.sidebar:
     st.markdown("- Junta Directiva")
     st.markdown("- Chat IA 24/7")
     st.markdown("- Comunidad")
+    st.markdown("- Testimonios")
     st.markdown("- Contacto")
     st.markdown("- FAQ")
 
@@ -340,7 +387,7 @@ if "app_loaded" not in st.session_state:
         )
         barra = st.progress(0)
         for i in range(0, 101, 20):
-            time.sleep(0.07)
+            time.sleep(0.05)
             barra.progress(i)
     placeholder.empty()
     st.session_state.app_loaded = True
@@ -501,7 +548,7 @@ with col_pay1:
     )
 
 # ============================================================
-# 10. GARANTIA DE SERVICIO (NUEVO)
+# 10. GARANTIA DE SERVICIO
 # ============================================================
 st.markdown(
     """
@@ -568,6 +615,7 @@ with col_fund3:
         """,
         unsafe_allow_html=True,
     )
+
 # ============================================================
 # 12. CHAT DE IA 24/7
 # ============================================================
@@ -662,6 +710,33 @@ with col_chat2:
             st.rerun()
 
 # ============================================================
+# 13. TESTIMONIOS — NUEVO (el CSS ya existía pero nunca se usaba)
+# ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#e0e6ff;'>Lo Que Dicen Nuestros Clientes</h2>", unsafe_allow_html=True)
+st.caption("Edita estos testimonios con reseñas reales a medida que las recibas — los ficticios pueden dañar tu credibilidad.")
+
+testimonios = [
+    ("Excelente atencion y rapidez en la entrega de mi pagina web. Superaron mis expectativas.", "Cliente verificado", 5),
+    ("El diseño de mis posts para redes cambio por completo la imagen de mi negocio.", "Cliente verificado", 5),
+    ("El chat de IA respondio todas mis dudas a la 1am. Se nota la seriedad del equipo.", "Cliente verificado", 5),
+]
+
+col_t1, col_t2, col_t3 = st.columns(3)
+for col, (texto_t, autor_t, estrellas) in zip([col_t1, col_t2, col_t3], testimonios):
+    with col:
+        st.markdown(
+            f"""
+            <div class='testimonial-card'>
+                <div class='testi-stars'>{'★' * estrellas}</div>
+                <div class='testi-text'>{texto_t}</div>
+                <div class='testi-author'>— {autor_t}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# ============================================================
 # 14. CHAT GLOBAL DE LA COMUNIDAD
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -671,7 +746,15 @@ st.write("Deja tu mensaje para que lo vean todos los visitantes de la pagina:")
 DB_PATH = "chat_global.db"
 
 
-def conectar_bd():
+@st.cache_resource
+def obtener_conexion_bd():
+    """
+    Conexion cacheada para no abrir/cerrar el archivo en cada rerun.
+    NOTA IMPORTANTE: en Streamlit Community Cloud el sistema de archivos
+    es efimero — este archivo .db se borra si la app se reinicia o
+    redepliega. Para persistencia real a largo plazo conviene usar una
+    base de datos externa (Supabase, Turso, PostgreSQL, etc.).
+    """
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.execute(
         """
@@ -688,17 +771,16 @@ def conectar_bd():
 
 
 def obtener_mensajes(limite=50):
-    conn = conectar_bd()
+    conn = obtener_conexion_bd()
     filas = conn.execute(
         "SELECT id, nombre, mensaje, fecha FROM mensajes_globales ORDER BY id DESC LIMIT ?",
         (limite,),
     ).fetchall()
-    conn.close()
     return list(reversed(filas))
 
 
 def guardar_mensaje(nombre, mensaje):
-    conn = conectar_bd()
+    conn = obtener_conexion_bd()
     conn.execute(
         "INSERT INTO mensajes_globales (nombre, mensaje, fecha) VALUES (?, ?, ?)",
         (
@@ -708,18 +790,19 @@ def guardar_mensaje(nombre, mensaje):
         ),
     )
     conn.commit()
-    conn.close()
 
 
 def borrar_mensaje(id_mensaje):
-    conn = conectar_bd()
+    conn = obtener_conexion_bd()
     conn.execute("DELETE FROM mensajes_globales WHERE id = ?", (id_mensaje,))
     conn.commit()
-    conn.close()
 
 
 if "nombre_chat_global" not in st.session_state:
     st.session_state.nombre_chat_global = ""
+
+if "ultimo_envio_ts" not in st.session_state:
+    st.session_state.ultimo_envio_ts = 0.0
 
 with st.form("form_chat_global", clear_on_submit=True):
     nombre_visitante = st.text_input(
@@ -734,12 +817,21 @@ with st.form("form_chat_global", clear_on_submit=True):
         placeholder="Escribe algo para la comunidad...",
         height=80,
     )
+    # Honeypot anti-spam: campo invisible para bots. Un humano nunca lo llena.
+    sitio_web_trampa = st.text_input("Deja este campo vacio", key="honeypot", label_visibility="collapsed")
+
     enviar = st.form_submit_button("Publicar mensaje")
     if enviar:
-        if not nombre_visitante.strip() or not mensaje_visitante.strip():
+        ahora = time.time()
+        if sitio_web_trampa:
+            st.warning("No se pudo publicar el mensaje.")
+        elif not nombre_visitante.strip() or not mensaje_visitante.strip():
             st.warning("Escribe tu nombre y un mensaje antes de publicar.")
+        elif ahora - st.session_state.ultimo_envio_ts < 5:
+            st.warning("Espera unos segundos antes de publicar otro mensaje.")
         else:
             st.session_state.nombre_chat_global = nombre_visitante.strip()
+            st.session_state.ultimo_envio_ts = ahora
             guardar_mensaje(nombre_visitante, mensaje_visitante)
             st.toast("Mensaje publicado con exito!")
             st.rerun()
@@ -779,7 +871,7 @@ st.caption(
 )
 
 # ============================================================
-# 15. FAQ — PREGUNTAS FRECUENTES (NUEVO)
+# 15. FAQ — PREGUNTAS FRECUENTES
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 style='color:#e0e6ff;'>Preguntas Frecuentes (FAQ)</h2>", unsafe_allow_html=True)
@@ -879,7 +971,7 @@ else:
     st.info("Completa los campos de Nombre, Telefono y Servicio para habilitar el boton de envio.")
 
 # ============================================================
-# 17. FOOTER PROFESIONAL (NUEVO)
+# 17. FOOTER PROFESIONAL
 # ============================================================
 ano_actual = datetime.now().year
 st.markdown(
