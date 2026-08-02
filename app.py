@@ -3,6 +3,10 @@ import streamlit.components.v1 as components
 import urllib.parse
 import sqlite3
 import hmac
+import random
+import string
+import csv
+import io
 from datetime import datetime
 import time
 
@@ -12,6 +16,224 @@ try:
 except ImportError:
     st.error("Falta instalar la librería de Groq. Asegúrate de añadir 'groq' en tu archivo requirements.txt de GitHub.")
     st.stop()
+
+# ============================================================
+# 0. CONFIGURACION CENTRAL DE SERVICIOS Y PRECIOS
+#    Fuente unica de verdad: antes los precios estaban repetidos
+#    (catalogo, chat IA, formulario) y podian desincronizarse si
+#    se cambiaba uno y no los otros. Ahora el Cotizador Automatico
+#    y el resto de la app leen de aqui.
+# ============================================================
+SERVICIOS = {
+    "Edicion de Video Corto (TikTok/Reels/Shorts)": {"min": 100, "max": 150, "unidad": "por video"},
+    "Miniatura de YouTube": {"min": 150, "max": 150, "unidad": "por diseno"},
+    "Pagina Web (Streamlit/Anvil)": {"min": 700, "max": 1000, "unidad": "por proyecto"},
+    "Servidor de Discord (canales, roles, bots)": {"min": 300, "max": 400, "unidad": "por proyecto"},
+    "Paquete de Posts para Redes Sociales": {"min": 150, "max": 300, "unidad": "por diseno"},
+    "Invitacion Digital": {"min": 200, "max": 200, "unidad": "por diseno"},
+}
+
+RECARGO_URGENCIA = {
+    "Normal (5-7 dias)": 1.0,
+    "Rapido (2-3 dias)": 1.15,
+    "Urgente (24-48 horas)": 1.35,
+}
+
+# ============================================================
+# 0B. BASE DE DATOS — una sola conexion cacheada para las 4 tablas
+#     que alimentan los sistemas nuevos (mensajes, pedidos, resenas,
+#     leads). Se define aqui arriba para que estas funciones esten
+#     disponibles sin importar en que orden aparezcan las secciones
+#     mas abajo en la pagina.
+#
+#     NOTA IMPORTANTE: en Streamlit Community Cloud el sistema de
+#     archivos es efimero — este archivo .db se borra si la app se
+#     reinicia o redepliega. Para persistencia real a largo plazo
+#     conviene usar una base de datos externa (Supabase, Turso,
+#     PostgreSQL, etc.).
+# ============================================================
+DB_PATH = "warde_datos.db"
+
+
+@st.cache_resource
+def obtener_conexion_bd():
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mensajes_globales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            fecha TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ordenes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT NOT NULL UNIQUE,
+            nombre TEXT NOT NULL,
+            contacto TEXT NOT NULL,
+            servicio TEXT NOT NULL,
+            presupuesto TEXT,
+            urgencia TEXT,
+            detalles TEXT,
+            estado TEXT NOT NULL DEFAULT 'Recibido',
+            fecha TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS resenas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            comentario TEXT NOT NULL,
+            estrellas INTEGER NOT NULL,
+            aprobado INTEGER NOT NULL DEFAULT 0,
+            fecha TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS leads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            contacto TEXT NOT NULL,
+            interes TEXT,
+            fecha TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    return conn
+
+
+# ---- Mensajes (chat global de la comunidad) ----
+def obtener_mensajes(limite=50):
+    conn = obtener_conexion_bd()
+    filas = conn.execute(
+        "SELECT id, nombre, mensaje, fecha FROM mensajes_globales ORDER BY id DESC LIMIT ?",
+        (limite,),
+    ).fetchall()
+    return list(reversed(filas))
+
+
+def guardar_mensaje(nombre, mensaje):
+    conn = obtener_conexion_bd()
+    conn.execute(
+        "INSERT INTO mensajes_globales (nombre, mensaje, fecha) VALUES (?, ?, ?)",
+        (nombre.strip()[:40], mensaje.strip()[:300], datetime.now().strftime("%d/%m %H:%M")),
+    )
+    conn.commit()
+
+
+def borrar_mensaje(id_mensaje):
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM mensajes_globales WHERE id = ?", (id_mensaje,))
+    conn.commit()
+
+
+# ---- Sistema 2: Seguimiento de Pedidos ----
+def generar_codigo_orden():
+    sufijo = "".join(random.choices(string.digits, k=4))
+    return f"WARDE-{sufijo}"
+
+
+def guardar_orden(nombre, contacto, servicio, presupuesto, urgencia, detalles):
+    conn = obtener_conexion_bd()
+    for _ in range(5):
+        codigo = generar_codigo_orden()
+        try:
+            conn.execute(
+                """
+                INSERT INTO ordenes (codigo, nombre, contacto, servicio, presupuesto, urgencia, detalles, estado, fecha)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'Recibido', ?)
+                """,
+                (
+                    codigo, nombre.strip()[:60], contacto.strip()[:40], servicio,
+                    presupuesto, urgencia, (detalles or "").strip()[:500],
+                    datetime.now().strftime("%d/%m/%Y %H:%M"),
+                ),
+            )
+            conn.commit()
+            return codigo
+        except sqlite3.IntegrityError:
+            continue  # codigo duplicado (muy improbable): reintenta con otro
+    return None
+
+
+def obtener_orden_por_codigo(codigo):
+    conn = obtener_conexion_bd()
+    return conn.execute(
+        "SELECT codigo, nombre, servicio, estado, fecha FROM ordenes WHERE codigo = ?",
+        (codigo.strip().upper(),),
+    ).fetchone()
+
+
+def listar_ordenes(limite=100):
+    conn = obtener_conexion_bd()
+    return conn.execute(
+        "SELECT id, codigo, nombre, servicio, estado, fecha FROM ordenes ORDER BY id DESC LIMIT ?",
+        (limite,),
+    ).fetchall()
+
+
+def actualizar_estado_orden(id_orden, nuevo_estado):
+    conn = obtener_conexion_bd()
+    conn.execute("UPDATE ordenes SET estado = ? WHERE id = ?", (nuevo_estado, id_orden))
+    conn.commit()
+
+
+# ---- Sistema 3: Resenas reales de clientes ----
+def guardar_resena(nombre, comentario, estrellas):
+    conn = obtener_conexion_bd()
+    conn.execute(
+        "INSERT INTO resenas (nombre, comentario, estrellas, aprobado, fecha) VALUES (?, ?, ?, 0, ?)",
+        (nombre.strip()[:40], comentario.strip()[:400], int(estrellas), datetime.now().strftime("%d/%m/%Y")),
+    )
+    conn.commit()
+
+
+def obtener_resenas_aprobadas(limite=9):
+    conn = obtener_conexion_bd()
+    return conn.execute(
+        "SELECT nombre, comentario, estrellas, fecha FROM resenas WHERE aprobado = 1 ORDER BY id DESC LIMIT ?",
+        (limite,),
+    ).fetchall()
+
+
+def obtener_resenas_pendientes():
+    conn = obtener_conexion_bd()
+    return conn.execute(
+        "SELECT id, nombre, comentario, estrellas, fecha FROM resenas WHERE aprobado = 0 ORDER BY id DESC"
+    ).fetchall()
+
+
+def moderar_resena(id_resena, aprobar):
+    conn = obtener_conexion_bd()
+    if aprobar:
+        conn.execute("UPDATE resenas SET aprobado = 1 WHERE id = ?", (id_resena,))
+    else:
+        conn.execute("DELETE FROM resenas WHERE id = ?", (id_resena,))
+    conn.commit()
+
+
+# ---- Sistema 4: Captura de leads / lista de espera VIP ----
+def guardar_lead(nombre, contacto, interes):
+    conn = obtener_conexion_bd()
+    conn.execute(
+        "INSERT INTO leads (nombre, contacto, interes, fecha) VALUES (?, ?, ?, ?)",
+        (nombre.strip()[:60], contacto.strip()[:60], interes, datetime.now().strftime("%d/%m/%Y %H:%M")),
+    )
+    conn.commit()
+
+
+def listar_leads():
+    conn = obtener_conexion_bd()
+    return conn.execute("SELECT nombre, contacto, interes, fecha FROM leads ORDER BY id DESC").fetchall()
 
 # ============================================================
 # 1. CONFIGURACIÓN DE PÁGINA
@@ -551,29 +773,9 @@ components.html(
 )
 
 # ============================================================
-# 3. SIDEBAR — Navegación rápida + estado del sistema
+# 3. SIDEBAR — Estado del sistema
 # ============================================================
 with st.sidebar:
-    st.markdown(
-        "<h3 style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:1rem;'>NAVEGACION RAPIDA</h3>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        """
-        <a href="#servicios" class="nav-link">Servicios</a>
-        <a href="#pagos" class="nav-link">Metodos de Pago</a>
-        <a href="#junta" class="nav-link">Junta Directiva</a>
-        <a href="#chat-ia" class="nav-link">Chat IA 24/7</a>
-        <a href="#testimonios" class="nav-link">Testimonios</a>
-        <a href="#comunidad" class="nav-link">Comunidad</a>
-        <a href="#faq" class="nav-link">FAQ</a>
-        <a href="#contacto" class="nav-link">Contacto</a>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-
     st.markdown(
         "<p style='color:#888ea8; font-size:0.78rem; text-transform:uppercase; letter-spacing:1px;'>Estado del Sistema</p>",
         unsafe_allow_html=True,
@@ -767,6 +969,38 @@ with st.expander("Siguenos en Nuestras Redes Sociales"):
     )
 
 # ============================================================
+# 8B. SISTEMA 1: COTIZADOR AUTOMATICO DE PRESUPUESTO
+# ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='cotizador' style='color:#e0e6ff;'>Cotizador Automatico</h2>", unsafe_allow_html=True)
+st.write("Calcula un estimado al instante segun el servicio, la cantidad y la urgencia:")
+
+col_cot1, col_cot2, col_cot3 = st.columns([2, 1, 1.4])
+with col_cot1:
+    servicio_cot = st.selectbox("Servicio", list(SERVICIOS.keys()), key="servicio_cotizador")
+with col_cot2:
+    cantidad_cot = st.number_input("Cantidad", min_value=1, max_value=50, value=1, step=1, key="cantidad_cotizador")
+with col_cot3:
+    urgencia_cot = st.selectbox("Urgencia", list(RECARGO_URGENCIA.keys()), key="urgencia_cotizador")
+
+info_servicio = SERVICIOS[servicio_cot]
+multiplicador = RECARGO_URGENCIA[urgencia_cot]
+total_min = info_servicio["min"] * cantidad_cot * multiplicador
+total_max = info_servicio["max"] * cantidad_cot * multiplicador
+
+col_res1, col_res2 = st.columns(2)
+with col_res1:
+    st.metric("Estimado minimo", f"RD$ {total_min:,.0f}")
+with col_res2:
+    st.metric("Estimado maximo", f"RD$ {total_max:,.0f}")
+
+if multiplicador > 1.0:
+    st.caption(f"Incluye recargo por urgencia de {int((multiplicador - 1) * 100)}%. Precio base: {info_servicio['unidad']}.")
+else:
+    st.caption(f"Sin recargo por urgencia. Precio base: {info_servicio['unidad']}.")
+st.caption("Este calculo es un estimado orientativo; el presupuesto final se confirma al coordinar el proyecto.")
+
+# ============================================================
 # 9. METODOS DE PAGO
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -942,31 +1176,75 @@ with col_chat2:
             st.rerun()
 
 # ============================================================
-# 13. TESTIMONIOS — NUEVO (el CSS ya existía pero nunca se usaba)
+# 13. SISTEMA 3: RESENAS REALES DE CLIENTES
+#     Reemplaza los testimonios ficticios por resenas enviadas por
+#     clientes de verdad, moderadas antes de publicarse (evita spam
+#     y comentarios ofensivos sin filtrar).
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='testimonios' style='color:#e0e6ff;'>Lo Que Dicen Nuestros Clientes</h2>", unsafe_allow_html=True)
-st.caption("Edita estos testimonios con reseñas reales a medida que las recibas — los ficticios pueden dañar tu credibilidad.")
 
-testimonios = [
-    ("Excelente atencion y rapidez en la entrega de mi pagina web. Superaron mis expectativas.", "Cliente verificado", 5),
-    ("El diseño de mis posts para redes cambio por completo la imagen de mi negocio.", "Cliente verificado", 5),
-    ("El chat de IA respondio todas mis dudas a la 1am. Se nota la seriedad del equipo.", "Cliente verificado", 5),
-]
+resenas_aprobadas = obtener_resenas_aprobadas()
 
-col_t1, col_t2, col_t3 = st.columns(3)
-for col, (texto_t, autor_t, estrellas) in zip([col_t1, col_t2, col_t3], testimonios):
-    with col:
-        st.markdown(
-            f"""
-            <div class='testimonial-card'>
-                <div class='testi-stars'>{'★' * estrellas}</div>
-                <div class='testi-text'>{texto_t}</div>
-                <div class='testi-author'>— {autor_t}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+if not resenas_aprobadas:
+    st.info("Todavia no hay resenas publicadas. Si ya trabajaste con nosotros, se el primero en dejar la tuya abajo!")
+else:
+    columnas_resenas = st.columns(3)
+    for idx, (nombre_r, comentario_r, estrellas_r, fecha_r) in enumerate(resenas_aprobadas):
+        with columnas_resenas[idx % 3]:
+            st.markdown(
+                f"""
+                <div class='testimonial-card'>
+                    <div class='testi-stars'>{'★' * estrellas_r}{'☆' * (5 - estrellas_r)}</div>
+                    <div class='testi-text'>{comentario_r}</div>
+                    <div class='testi-author'>— {nombre_r} · {fecha_r}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+with st.expander("Dejar mi propia resena"):
+    with st.form("form_resena", clear_on_submit=True):
+        nombre_resena = st.text_input("Tu nombre", max_chars=40, key="nombre_resena_form")
+        estrellas_resena = st.slider("Calificacion", min_value=1, max_value=5, value=5, key="estrellas_resena_form")
+        comentario_resena = st.text_area(
+            "Cuentanos tu experiencia", max_chars=400, height=90, key="comentario_resena_form"
         )
+        enviar_resena = st.form_submit_button("Enviar resena")
+        if enviar_resena:
+            if not nombre_resena.strip() or not comentario_resena.strip():
+                st.warning("Escribe tu nombre y tu comentario antes de enviar.")
+            else:
+                guardar_resena(nombre_resena, comentario_resena, estrellas_resena)
+                st.success("Gracias! Tu resena se publicara luego de una breve revision.")
+
+# ============================================================
+# 13B. SISTEMA 4: LISTA DE ESPERA VIP (captura de leads)
+# ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='lista-vip' style='color:#e0e6ff;'>Lista de Espera VIP</h2>", unsafe_allow_html=True)
+st.write(
+    "Unete y se de los primeros en enterarte de promociones, cupos disponibles y nuevos servicios."
+)
+
+with st.form("form_lista_vip", clear_on_submit=True):
+    col_vip1, col_vip2 = st.columns(2)
+    with col_vip1:
+        nombre_vip = st.text_input("Tu nombre", max_chars=60, key="nombre_vip_form")
+    with col_vip2:
+        contacto_vip = st.text_input("Correo o WhatsApp", max_chars=60, key="contacto_vip_form")
+    interes_vip = st.selectbox(
+        "Que te interesa mas?",
+        list(SERVICIOS.keys()) + ["Aun no estoy seguro"],
+        key="interes_vip_form",
+    )
+    enviar_vip = st.form_submit_button("Unirme a la lista VIP")
+    if enviar_vip:
+        if not nombre_vip.strip() or not contacto_vip.strip():
+            st.warning("Escribe tu nombre y un correo o numero de WhatsApp.")
+        else:
+            guardar_lead(nombre_vip, contacto_vip, interes_vip)
+            st.success("Listo! Ya estas en la lista VIP de Tecnologia Warde.")
 
 # ============================================================
 # 14. CHAT GLOBAL DE LA COMUNIDAD
@@ -974,61 +1252,6 @@ for col, (texto_t, autor_t, estrellas) in zip([col_t1, col_t2, col_t3], testimon
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='comunidad' style='color:#e0e6ff;'>Chat Global de la Comunidad</h2>", unsafe_allow_html=True)
 st.write("Deja tu mensaje para que lo vean todos los visitantes de la pagina:")
-
-DB_PATH = "chat_global.db"
-
-
-@st.cache_resource
-def obtener_conexion_bd():
-    """
-    Conexion cacheada para no abrir/cerrar el archivo en cada rerun.
-    NOTA IMPORTANTE: en Streamlit Community Cloud el sistema de archivos
-    es efimero — este archivo .db se borra si la app se reinicia o
-    redepliega. Para persistencia real a largo plazo conviene usar una
-    base de datos externa (Supabase, Turso, PostgreSQL, etc.).
-    """
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS mensajes_globales (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            mensaje TEXT NOT NULL,
-            fecha TEXT NOT NULL
-        )
-        """
-    )
-    conn.commit()
-    return conn
-
-
-def obtener_mensajes(limite=50):
-    conn = obtener_conexion_bd()
-    filas = conn.execute(
-        "SELECT id, nombre, mensaje, fecha FROM mensajes_globales ORDER BY id DESC LIMIT ?",
-        (limite,),
-    ).fetchall()
-    return list(reversed(filas))
-
-
-def guardar_mensaje(nombre, mensaje):
-    conn = obtener_conexion_bd()
-    conn.execute(
-        "INSERT INTO mensajes_globales (nombre, mensaje, fecha) VALUES (?, ?, ?)",
-        (
-            nombre.strip()[:40],
-            mensaje.strip()[:300],
-            datetime.now().strftime("%d/%m %H:%M"),
-        ),
-    )
-    conn.commit()
-
-
-def borrar_mensaje(id_mensaje):
-    conn = obtener_conexion_bd()
-    conn.execute("DELETE FROM mensajes_globales WHERE id = ?", (id_mensaje,))
-    conn.commit()
-
 
 if "nombre_chat_global" not in st.session_state:
     st.session_state.nombre_chat_global = ""
@@ -1068,10 +1291,8 @@ with st.form("form_chat_global", clear_on_submit=True):
             st.toast("Mensaje publicado con exito!")
             st.rerun()
 
-col_actualizar, col_moderar = st.columns([1, 1])
-with col_actualizar:
-    if st.button("Actualizar mensajes", use_container_width=True):
-        st.rerun()
+if st.button("Actualizar mensajes"):
+    st.rerun()
 
 mensajes = obtener_mensajes()
 if not mensajes:
@@ -1082,24 +1303,10 @@ else:
             st.markdown(f"**{nombre}** · _{fecha}_")
             st.write(texto)
 
-with col_moderar:
-    with st.popover("Panel de moderacion", use_container_width=True):
-        clave_mod = st.text_input("Contrasena de moderador", type="password", key="clave_moderador")
-        clave_correcta = st.secrets.get("MOD_PASSWORD")
-        if clave_mod and clave_correcta and hmac.compare_digest(clave_mod, clave_correcta):
-            st.success("Acceso concedido.")
-            for id_msg, nombre, texto, fecha in mensajes:
-                col_txt, col_btn = st.columns([4, 1])
-                col_txt.write(f"**{nombre}** ({fecha}): {texto[:60]}")
-                if col_btn.button("X", key=f"borrar_{id_msg}"):
-                    borrar_mensaje(id_msg)
-                    st.rerun()
-        elif clave_mod:
-            st.error("Contrasena incorrecta.")
-
 st.caption(
     "Este es un espacio publico: cualquier visitante puede ver los mensajes. "
-    "Nunca compartas tu direccion, contrasenhas ni datos bancarios aqui."
+    "Nunca compartas tu direccion, contrasenhas ni datos bancarios aqui. "
+    "Los mensajes se moderan desde el Panel de Administracion, al final de la pagina."
 )
 
 # ============================================================
@@ -1189,18 +1396,172 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
         f"Urgencia: {urgencia}\n"
         f"Detalles: {detalles_proyecto}"
     )
-    mensaje_codificado = urllib.parse.quote(mensaje_texto)
-    enlace_whatsapp = f"https://wa.me/{telefono_warde}?text={mensaje_codificado}"
+
+    if "orden_actual_codigo" not in st.session_state:
+        st.session_state.orden_actual_codigo = None
+
     st.write("")
-    st.link_button(
-        "Enviar orden por WhatsApp",
-        enlace_whatsapp,
-        type="primary",
-        use_container_width=True,
-    )
-    st.caption("Al hacer clic se abrira WhatsApp con tu solicitud prellenada. Solo presiona Enviar.")
+    if st.button("Generar orden y codigo de seguimiento", type="primary", use_container_width=True):
+        codigo_generado = guardar_orden(
+            nombre_cliente, contacto_cliente, servicio_seleccionado,
+            presupuesto_ref, urgencia, detalles_proyecto,
+        )
+        st.session_state.orden_actual_codigo = codigo_generado
+
+    if st.session_state.orden_actual_codigo:
+        codigo_actual = st.session_state.orden_actual_codigo
+        mensaje_con_codigo = mensaje_texto + f"\nCodigo de seguimiento: {codigo_actual}"
+        enlace_whatsapp = f"https://wa.me/{telefono_warde}?text={urllib.parse.quote(mensaje_con_codigo)}"
+        st.success(f"Tu codigo de seguimiento es **{codigo_actual}** — guardalo para consultar el estado de tu pedido mas abajo.")
+        st.link_button(
+            "Enviar orden por WhatsApp",
+            enlace_whatsapp,
+            type="primary",
+            use_container_width=True,
+        )
+        st.caption("Al hacer clic se abrira WhatsApp con tu solicitud y tu codigo prellenados. Solo presiona Enviar.")
 else:
-    st.info("Completa los campos de Nombre, Telefono y Servicio para habilitar el boton de envio.")
+    st.info("Completa los campos de Nombre, Telefono y Servicio para generar tu orden.")
+
+# ============================================================
+# 16B. SISTEMA 2: SEGUIMIENTO DE PEDIDOS
+# ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='seguimiento' style='color:#e0e6ff;'>Rastrea tu Pedido</h2>", unsafe_allow_html=True)
+st.write("Escribe el codigo que recibiste al generar tu orden (Ej. WARDE-1234):")
+
+col_track1, col_track2 = st.columns([3, 1])
+with col_track1:
+    codigo_consulta = st.text_input("Codigo de seguimiento", placeholder="WARDE-0000", label_visibility="collapsed")
+with col_track2:
+    consultar = st.button("Consultar", use_container_width=True)
+
+if consultar:
+    if not codigo_consulta.strip():
+        st.warning("Escribe un codigo para consultar.")
+    else:
+        orden_encontrada = obtener_orden_por_codigo(codigo_consulta)
+        if not orden_encontrada:
+            st.error("No encontramos ninguna orden con ese codigo. Verifica que este bien escrito.")
+        else:
+            codigo_o, nombre_o, servicio_o, estado_o, fecha_o = orden_encontrada
+            st.markdown(
+                f"""
+                <div class='garantia-box' style='text-align:left;'>
+                    <p style='color:#00A8FF; font-family:Orbitron,sans-serif; font-size:0.85rem; margin-bottom:8px;'>{codigo_o}</p>
+                    <p style='color:#cdd6f4; margin:2px 0;'><strong>Cliente:</strong> {nombre_o}</p>
+                    <p style='color:#cdd6f4; margin:2px 0;'><strong>Servicio:</strong> {servicio_o}</p>
+                    <p style='color:#cdd6f4; margin:2px 0;'><strong>Estado:</strong> {estado_o}</p>
+                    <p style='color:#7B8DB0; font-size:0.82rem; margin-top:8px;'>Creada el {fecha_o}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+# ============================================================
+# 16C. SISTEMA 5: PANEL DE ADMINISTRACION UNIFICADO
+#      Centraliza en un solo lugar protegido por contrasena lo que
+#      antes estaba disperso: moderar el chat global, aprobar/rechazar
+#      resenas, actualizar el estado de los pedidos y consultar los
+#      leads de la lista VIP.
+# ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='admin' style='color:#e0e6ff;'>Panel de Administracion</h2>", unsafe_allow_html=True)
+
+if "admin_autenticado" not in st.session_state:
+    st.session_state.admin_autenticado = False
+
+if not st.session_state.admin_autenticado:
+    clave_admin = st.text_input("Contrasena de administrador", type="password", key="clave_admin_panel")
+    clave_correcta = st.secrets.get("MOD_PASSWORD")
+    if clave_admin:
+        if clave_correcta and hmac.compare_digest(clave_admin, clave_correcta):
+            st.session_state.admin_autenticado = True
+            st.rerun()
+        else:
+            st.error("Contrasena incorrecta.")
+else:
+    col_admin_top1, col_admin_top2 = st.columns([3, 1])
+    with col_admin_top1:
+        st.success("Acceso concedido al Panel de Administracion.")
+    with col_admin_top2:
+        if st.button("Cerrar sesion", use_container_width=True):
+            st.session_state.admin_autenticado = False
+            st.rerun()
+
+    tab_chat, tab_resenas, tab_pedidos, tab_leads = st.tabs(
+        ["Chat Global", "Resenas", "Pedidos", "Leads VIP"]
+    )
+
+    with tab_chat:
+        mensajes_admin = obtener_mensajes()
+        if not mensajes_admin:
+            st.info("No hay mensajes todavia.")
+        else:
+            for id_msg, nombre_m, texto_m, fecha_m in mensajes_admin:
+                col_txt, col_btn = st.columns([4, 1])
+                col_txt.write(f"**{nombre_m}** ({fecha_m}): {texto_m}")
+                if col_btn.button("Borrar", key=f"admin_borrar_msg_{id_msg}"):
+                    borrar_mensaje(id_msg)
+                    st.rerun()
+
+    with tab_resenas:
+        resenas_pendientes = obtener_resenas_pendientes()
+        if not resenas_pendientes:
+            st.info("No hay resenas pendientes de moderacion.")
+        else:
+            for id_r, nombre_r, comentario_r, estrellas_r, fecha_r in resenas_pendientes:
+                st.markdown(f"**{nombre_r}** — {'★' * estrellas_r} — _{fecha_r}_")
+                st.write(comentario_r)
+                col_ap, col_re = st.columns(2)
+                if col_ap.button("Aprobar", key=f"aprobar_resena_{id_r}", use_container_width=True):
+                    moderar_resena(id_r, aprobar=True)
+                    st.rerun()
+                if col_re.button("Rechazar", key=f"rechazar_resena_{id_r}", use_container_width=True):
+                    moderar_resena(id_r, aprobar=False)
+                    st.rerun()
+                st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    with tab_pedidos:
+        ordenes_admin = listar_ordenes()
+        if not ordenes_admin:
+            st.info("No hay pedidos registrados todavia.")
+        else:
+            estados_posibles = ["Recibido", "En progreso", "En revision", "Completado", "Cancelado"]
+            for id_o, codigo_o, nombre_o, servicio_o, estado_o, fecha_o in ordenes_admin:
+                col_info, col_estado = st.columns([3, 2])
+                with col_info:
+                    st.write(f"**{codigo_o}** · {nombre_o} · {servicio_o} · _{fecha_o}_")
+                with col_estado:
+                    nuevo_estado = st.selectbox(
+                        "Estado", estados_posibles,
+                        index=estados_posibles.index(estado_o) if estado_o in estados_posibles else 0,
+                        key=f"estado_orden_{id_o}", label_visibility="collapsed",
+                    )
+                    if nuevo_estado != estado_o:
+                        actualizar_estado_orden(id_o, nuevo_estado)
+                        st.rerun()
+
+    with tab_leads:
+        leads_admin = listar_leads()
+        if not leads_admin:
+            st.info("Todavia no hay leads en la lista VIP.")
+        else:
+            st.write(f"Total de leads: **{len(leads_admin)}**")
+            for nombre_l, contacto_l, interes_l, fecha_l in leads_admin:
+                st.write(f"**{nombre_l}** · {contacto_l} · {interes_l} · _{fecha_l}_")
+
+            buffer_csv = io.StringIO()
+            escritor_csv = csv.writer(buffer_csv)
+            escritor_csv.writerow(["Nombre", "Contacto", "Interes", "Fecha"])
+            escritor_csv.writerows(leads_admin)
+            st.download_button(
+                "Descargar leads en CSV",
+                data=buffer_csv.getvalue(),
+                file_name="leads_warde.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
 
 # ============================================================
 # 17. FOOTER PROFESIONAL
