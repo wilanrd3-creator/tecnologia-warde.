@@ -144,8 +144,51 @@ def obtener_conexion_bd():
         )
         """
     )
+    # ---- Consola del Modo Propietario (GOD): registro de eventos ----
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS log_eventos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tipo TEXT NOT NULL,
+            detalle TEXT NOT NULL,
+            fecha TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
     return conn
+
+
+# ---- Modo Propietario (GOD): consola de eventos en vivo ----
+def registrar_evento(tipo, detalle):
+    try:
+        conn = obtener_conexion_bd()
+        conn.execute(
+            "INSERT INTO log_eventos (tipo, detalle, fecha) VALUES (?, ?, ?)",
+            (tipo[:30], (detalle or "").strip()[:300], datetime.now().strftime("%d/%m/%Y %H:%M:%S")),
+        )
+        conn.commit()
+        # La tabla de eventos no debe crecer sin limite: nos quedamos con los ultimos 500.
+        conn.execute(
+            "DELETE FROM log_eventos WHERE id NOT IN "
+            "(SELECT id FROM log_eventos ORDER BY id DESC LIMIT 500)"
+        )
+        conn.commit()
+    except Exception:
+        pass  # la consola nunca debe romper la experiencia del usuario
+
+
+def obtener_eventos(limite=150):
+    conn = obtener_conexion_bd()
+    return conn.execute(
+        "SELECT tipo, detalle, fecha FROM log_eventos ORDER BY id DESC LIMIT ?", (limite,)
+    ).fetchall()
+
+
+def limpiar_eventos():
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM log_eventos")
+    conn.commit()
 
 
 # ---- Modo Propietario (GOD): visitas globales ----
@@ -397,9 +440,6 @@ st.set_page_config(
 
 # ============================================================
 # 1B. SEO BÁSICO — meta description, OG tags y título de pestaña
-#     (Streamlit no permite editar el <head> nativamente, así que
-#      lo inyectamos con un componente HTML. Esto ayuda a que
-#      buscadores y redes sociales muestren una vista previa correcta.)
 # ============================================================
 components.html(
     """
@@ -407,14 +447,12 @@ components.html(
         try {
             const doc = window.parent.document;
             doc.title = "Tecnología Warde | Desarrollo Web, Diseño y Video en RD";
-
             const metaTags = [
                 {name: "description", content: "Tecnología Warde: edición de video, diseño gráfico y desarrollo web profesional en República Dominicana. Cotiza tu proyecto hoy mismo."},
                 {property: "og:title", content: "Tecnología Warde"},
                 {property: "og:description", content: "Servicios digitales profesionales en República Dominicana: video, diseño y desarrollo web."},
                 {property: "og:type", content: "website"},
             ];
-
             metaTags.forEach(tagInfo => {
                 const selector = tagInfo.name ? `meta[name="${tagInfo.name}"]` : `meta[property="${tagInfo.property}"]`;
                 if (!doc.querySelector(selector)) {
@@ -441,25 +479,21 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600&display=swap');
 
-    /* ---- Fondo base ---- */
     .stApp {
         background: linear-gradient(135deg, #0F111A 0%, #141828 50%, #0A0D16 100%);
         font-family: 'Rajdhani', sans-serif;
     }
 
-    /* ---- Sidebar ---- */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #10131f 0%, #0c0f1a 100%);
         border-right: 1px solid #00A8FF22;
     }
 
-    /* ---- Encabezados globales ---- */
     h1, h2, h3 {
         font-family: 'Orbitron', sans-serif !important;
         letter-spacing: 1px;
     }
 
-    /* Acento animado bajo cada titulo de seccion (h2), sin tocar cada seccion */
     h2 {
         position: relative;
         display: inline-block;
@@ -482,7 +516,6 @@ st.markdown(
         to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ---- Separador personalizado ---- */
     .divider {
         width: 100%;
         height: 2px;
@@ -492,7 +525,6 @@ st.markdown(
         border-radius: 2px;
     }
 
-    /* ---- Cards de servicios ---- */
     .service-card {
         background: rgba(0, 168, 255, 0.05);
         border: 1px solid rgba(0, 168, 255, 0.25);
@@ -541,7 +573,6 @@ st.markdown(
         font-weight: 600;
     }
 
-    /* ---- Tarjeta de fundadores ---- */
     .founder-card {
         background: rgba(123, 47, 190, 0.08);
         border: 1px solid rgba(123, 47, 190, 0.30);
@@ -585,7 +616,6 @@ st.markdown(
     .badge-active { background: #00A8FF22; color: #00CFFF; border: 1px solid #00A8FF55; }
     .badge-protected { background: #7B2FBE22; color: #b57bee; border: 1px solid #7B2FBE55; }
 
-    /* ---- Tarjeta de estadísticas ---- */
     .stat-card {
         background: rgba(0,168,255,0.06);
         border: 1px solid rgba(0,168,255,0.20);
@@ -603,7 +633,6 @@ st.markdown(
     }
     .stat-label { color: #888ea8; font-size: 0.82rem; margin-top: 4px; }
 
-    /* ---- Testimonios ---- */
     .testimonial-card {
         background: rgba(255,255,255,0.03);
         border: 1px solid rgba(255,255,255,0.09);
@@ -625,7 +654,6 @@ st.markdown(
     .testi-author { color: #00A8FF; font-weight: 600; font-size: 0.85rem; margin-top: 8px; }
     .testi-stars { color: #f1c40f; font-size: 0.85rem; }
 
-    /* ---- FAQ ---- */
     .faq-item {
         background: rgba(255,255,255,0.025);
         border: 1px solid rgba(255,255,255,0.07);
@@ -634,7 +662,6 @@ st.markdown(
         margin-bottom: 10px;
     }
 
-    /* ---- Garantia ---- */
     .garantia-box {
         background: linear-gradient(135deg, rgba(0,168,255,0.08), rgba(123,47,190,0.08));
         border: 1px solid rgba(0,168,255,0.30);
@@ -643,7 +670,6 @@ st.markdown(
         text-align: center;
     }
 
-    /* ---- Social links ---- */
     .social-link {
         display: inline-block;
         padding: 8px 18px;
@@ -658,7 +684,6 @@ st.markdown(
     }
     .social-link:hover { transform: translateY(-2px); filter: brightness(1.2); }
 
-    /* ---- Status badge ---- */
     .status-online {
         display: inline-flex;
         align-items: center;
@@ -683,7 +708,6 @@ st.markdown(
         50%       { opacity: 0.4; transform: scale(0.75); }
     }
 
-    /* ---- Footer ---- */
     .footer {
         text-align: center;
         padding: 24px 0 8px;
@@ -694,10 +718,8 @@ st.markdown(
     }
     .footer a { color: #00A8FF; text-decoration: none; }
 
-    /* ---- Progress bar override ---- */
     .stProgress > div > div { background: linear-gradient(90deg, #00A8FF, #7B2FBE) !important; }
 
-    /* ---- Metric overrides ---- */
     [data-testid="stMetric"] {
         background: rgba(0,168,255,0.06);
         border: 1px solid rgba(0,168,255,0.18);
@@ -705,19 +727,12 @@ st.markdown(
         padding: 12px 16px;
     }
 
-    /* ---- RESPONSIVE: pantallas pequeñas / celulares ---- */
     @media (max-width: 640px) {
         h1 { font-size: 1.7rem !important; }
         .service-card, .founder-card, .testimonial-card { padding: 14px 14px; }
         .social-link { display: block; margin: 6px 0; text-align: center; }
         [data-testid="stMetric"] { padding: 8px 10px; }
     }
-
-    /* ============================================================
-       FONDO — base tecnica: gradiente lento + retícula de circuito
-       (en vez de blobs difuminados genéricos, usamos una trama de
-       puntos tipo placa de circuito, coherente con "Tecnologia Warde")
-       ============================================================ */
 
     .stApp {
         background-color: #0A0D16;
@@ -736,7 +751,6 @@ st.markdown(
         .stApp { animation: none; }
     }
 
-    /* Aseguramos que el contenido real quede POR ENCIMA de las formas */
     section.main > div.block-container {
         position: relative;
         z-index: 1;
@@ -745,9 +759,6 @@ st.markdown(
 
     html { scroll-behavior: smooth; }
 
-    /* ============================================================
-       TIPOGRAFIA DEL NOMBRE — tratamiento especial sin cambiar el texto
-       ============================================================ */
     .brand-title {
         font-family: 'Orbitron', sans-serif;
         font-size: 2.6rem;
@@ -770,24 +781,76 @@ st.markdown(
     @media (max-width: 640px) {
         .brand-title { font-size: 1.9rem; letter-spacing: 1.5px; }
     }
+
+    /* ---- NUEVO: cards de portafolio ---- */
+    .portfolio-card {
+        background: rgba(0,168,255,0.05);
+        border: 1px solid rgba(0,168,255,0.22);
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 16px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .portfolio-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,168,255,0.20);
+    }
+    .portfolio-cover {
+        height: 90px;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.6rem;
+        color: #fff;
+    }
+    .portfolio-body { padding: 14px 16px; }
+    .portfolio-tag {
+        display: inline-block;
+        font-size: 0.72rem;
+        color: #00CFFF;
+        background: #00A8FF1a;
+        border: 1px solid #00A8FF44;
+        border-radius: 20px;
+        padding: 2px 10px;
+        margin-bottom: 8px;
+    }
+
+    /* ---- NUEVO: linea de tiempo del proceso ---- */
+    .timeline-wrap { position: relative; padding-left: 28px; }
+    .timeline-wrap::before {
+        content: '';
+        position: absolute; left: 8px; top: 4px; bottom: 4px;
+        width: 2px;
+        background: linear-gradient(180deg, #00A8FF, #7B2FBE);
+    }
+    .timeline-step { position: relative; padding-bottom: 22px; }
+    .timeline-step::before {
+        content: '';
+        position: absolute; left: -28px; top: 2px;
+        width: 14px; height: 14px; border-radius: 50%;
+        background: #0A0D16;
+        border: 3px solid #00A8FF;
+    }
+    .timeline-title { color: #e0e6ff; font-family: 'Orbitron', sans-serif; font-size: 0.85rem; }
+    .timeline-desc { color: #888ea8; font-size: 0.85rem; margin-top: 2px; }
+
+    /* ---- NUEVO: cupon aplicado ---- */
+    .cupon-badge {
+        display: inline-block;
+        background: rgba(0,200,100,0.14);
+        border: 1px solid rgba(0,200,100,0.4);
+        color: #00c864;
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ============================================================
-# 2B. FONDO REAL — inyectado directo al documento del navegador
-#     (no al contenedor interno de Streamlit), para que el
-#     position:fixed funcione de verdad y cubra toda la pantalla
-#     sin importar el scroll ni la estructura interna de Streamlit.
-#
-#     Concepto/firma visual: una red de nodos conectados que se
-#     mueve muy lentamente por el fondo — la metáfora de "conexion
-#     digital" que da sentido a una empresa de servicios tecnologicos,
-#     ejecutada con pocos nodos, movimiento lento y colores de marca,
-#     en vez de blobs difuminados genericos. Un solo guardián evita
-#     que Streamlit duplique el canvas y el loop de animacion en
-#     cada rerun (algo que rompe el rendimiento con el tiempo).
+# 2B. FONDO REAL — red de nodos conectados en el navegador
 # ============================================================
 components.html(
     """
@@ -798,25 +861,13 @@ components.html(
             const canvasId = 'warde-network-canvas';
 
             if (!doc.getElementById(canvasId)) {
-
-                // ---- Glows de esquina, en los colores de marca ----
                 const glowStyle = doc.createElement('style');
                 glowStyle.id = 'warde-glow-style';
                 glowStyle.innerHTML = `
-                    #warde-glow-wrapper {
-                        position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-                    }
-                    #warde-glow-wrapper .glow {
-                        position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.20;
-                    }
-                    #warde-glow-wrapper .glow-a {
-                        width: 480px; height: 480px; top: -180px; left: -160px;
-                        background: radial-gradient(circle, #00A8FF, transparent 70%);
-                    }
-                    #warde-glow-wrapper .glow-b {
-                        width: 440px; height: 440px; bottom: -200px; right: -160px;
-                        background: radial-gradient(circle, #7B2FBE, transparent 70%);
-                    }
+                    #warde-glow-wrapper { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+                    #warde-glow-wrapper .glow { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.20; }
+                    #warde-glow-wrapper .glow-a { width: 480px; height: 480px; top: -180px; left: -160px; background: radial-gradient(circle, #00A8FF, transparent 70%); }
+                    #warde-glow-wrapper .glow-b { width: 440px; height: 440px; bottom: -200px; right: -160px; background: radial-gradient(circle, #7B2FBE, transparent 70%); }
                 `;
                 doc.head.appendChild(glowStyle);
                 const glowWrap = doc.createElement('div');
@@ -824,7 +875,6 @@ components.html(
                 glowWrap.innerHTML = `<div class="glow glow-a"></div><div class="glow glow-b"></div>`;
                 doc.body.appendChild(glowWrap);
 
-                // ---- Canvas de la red de nodos ----
                 const canvas = doc.createElement('canvas');
                 canvas.id = canvasId;
                 canvas.style.position = 'fixed';
@@ -838,10 +888,7 @@ components.html(
                 const reduceMotion = win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
                 let nodos = [];
-                function resize() {
-                    canvas.width = win.innerWidth;
-                    canvas.height = win.innerHeight;
-                }
+                function resize() { canvas.width = win.innerWidth; canvas.height = win.innerHeight; }
                 function crearNodos() {
                     const cantidad = Math.max(18, Math.min(42, Math.floor((win.innerWidth * win.innerHeight) / 45000)));
                     nodos = Array.from({ length: cantidad }, () => ({
@@ -853,15 +900,12 @@ components.html(
                         color: colores[Math.floor(Math.random() * colores.length)],
                     }));
                 }
-
                 resize();
                 crearNodos();
-
                 const maxDist = 150;
 
                 function dibujarFrame() {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
                     for (let i = 0; i < nodos.length; i++) {
                         for (let j = i + 1; j < nodos.length; j++) {
                             const a = nodos[i], b = nodos[j];
@@ -889,30 +933,20 @@ components.html(
 
                 function paso() {
                     for (const n of nodos) {
-                        n.x += n.vx;
-                        n.y += n.vy;
+                        n.x += n.vx; n.y += n.vy;
                         if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
                         if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
                     }
                     dibujarFrame();
-                    if (!reduceMotion) {
-                        win.requestAnimationFrame(paso);
-                    }
+                    if (!reduceMotion) win.requestAnimationFrame(paso);
                 }
 
                 win.addEventListener('resize', function () {
-                    resize();
-                    crearNodos();
+                    resize(); crearNodos();
                     if (reduceMotion) dibujarFrame();
                 });
 
-                // Si el usuario prefiere menos movimiento, dibujamos un solo
-                // fotograma estatico y no arrancamos el bucle de animacion.
-                if (reduceMotion) {
-                    dibujarFrame();
-                } else {
-                    paso();
-                }
+                if (reduceMotion) { dibujarFrame(); } else { paso(); }
             }
         } catch (e) {
             console.log('No se pudo inyectar el fondo:', e);
@@ -948,9 +982,6 @@ with st.sidebar:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # Contador de visitas por sesion (visible al publico) + contador
-    # global persistente en base de datos (solo visible para el
-    # Modo Propietario). Ambos se incrementan una sola vez por sesion.
     if "visita_contada" not in st.session_state:
         st.session_state.visita_contada = True
         if "total_visitas" not in st.session_state:
@@ -958,6 +989,7 @@ with st.sidebar:
         else:
             st.session_state.total_visitas += 1
         incrementar_visitas_globales()
+        registrar_evento("Visita", "Nueva sesion de un visitante")
 
     st.markdown(
         f"<p style='color:#4a5070; font-size:0.75rem; text-align:center;'>Visitas en esta sesion: {st.session_state.get('total_visitas', 1)}</p>",
@@ -1122,8 +1154,90 @@ with st.expander("Siguenos en Nuestras Redes Sociales"):
     )
 
 # ============================================================
-# 8B. SISTEMA 1: COTIZADOR AUTOMATICO DE PRESUPUESTO
+# 8B. NUEVO: PORTAFOLIO DE TRABAJOS
+#     Vitrina visual de proyectos anteriores organizada por
+#     categoria. Los datos viven en una lista simple aqui mismo;
+#     el CEO puede editar/agregar entradas sin tocar el resto
+#     de la app.
 # ============================================================
+PORTAFOLIO = [
+    {"titulo": "Landing page para negocio local", "categoria": "PROGRAMACION",
+     "descripcion": "Sitio en Streamlit con formulario de contacto y catalogo dinamico.",
+     "color": "linear-gradient(135deg,#00A8FF,#0060a8)"},
+    {"titulo": "Serie de Reels para restaurante", "categoria": "MULTIMEDIA",
+     "descripcion": "Edicion con subtitulos y cortes dinamicos para redes.",
+     "color": "linear-gradient(135deg,#7B2FBE,#3d1660)"},
+    {"titulo": "Identidad de marca para emprendimiento", "categoria": "DISENO",
+     "descripcion": "Paquete de posts, logo simple y plantillas para Instagram.",
+     "color": "linear-gradient(135deg,#00CFFF,#005b73)"},
+    {"titulo": "Servidor de Discord para comunidad gamer", "categoria": "PROGRAMACION",
+     "descripcion": "Canales, roles automaticos y bot de bienvenida.",
+     "color": "linear-gradient(135deg,#5865F2,#242952)"},
+]
+
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='portafolio' style='color:#e0e6ff;'>Portafolio de Trabajos</h2>", unsafe_allow_html=True)
+st.write("Una muestra de proyectos que hemos entregado:")
+
+categorias_portafolio = ["Todas"] + sorted({p["categoria"] for p in PORTAFOLIO})
+filtro_portafolio = st.selectbox("Filtrar por categoria", categorias_portafolio, key="filtro_portafolio")
+
+proyectos_a_mostrar = (
+    PORTAFOLIO if filtro_portafolio == "Todas"
+    else [p for p in PORTAFOLIO if p["categoria"] == filtro_portafolio]
+)
+
+cols_portafolio = st.columns(2)
+for idx, proyecto in enumerate(proyectos_a_mostrar):
+    with cols_portafolio[idx % 2]:
+        st.markdown(
+            f"""
+            <div class='portfolio-card'>
+                <div class='portfolio-cover' style='background:{proyecto["color"]};'>{proyecto["titulo"][:1]}</div>
+                <div class='portfolio-body'>
+                    <span class='portfolio-tag'>{proyecto["categoria"]}</span>
+                    <div class='service-title' style='margin-bottom:4px;'>{proyecto["titulo"]}</div>
+                    <div class='service-desc'>{proyecto["descripcion"]}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# ============================================================
+# 8C. NUEVO: LINEA DE TIEMPO DEL PROCESO DE TRABAJO
+# ============================================================
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='proceso' style='color:#e0e6ff;'>Como Trabajamos</h2>", unsafe_allow_html=True)
+
+PASOS_PROCESO = [
+    ("1. Cotizacion", "Usa el Cotizador Automatico o el formulario para recibir un estimado al instante."),
+    ("2. Confirmacion", "Coordinamos los detalles finales y el metodo de pago por WhatsApp."),
+    ("3. Desarrollo", "Trabajamos en tu proyecto y te mantenemos informado del avance."),
+    ("4. Entrega y revision", "Recibes tu proyecto con revisiones ilimitadas hasta tu aprobacion total."),
+]
+
+pasos_html = "<div class='timeline-wrap'>"
+for titulo_paso, desc_paso in PASOS_PROCESO:
+    pasos_html += (
+        f"<div class='timeline-step'>"
+        f"<div class='timeline-title'>{titulo_paso}</div>"
+        f"<div class='timeline-desc'>{desc_paso}</div>"
+        f"</div>"
+    )
+pasos_html += "</div>"
+st.markdown(pasos_html, unsafe_allow_html=True)
+
+# ============================================================
+# 8D. SISTEMA 1: COTIZADOR AUTOMATICO DE PRESUPUESTO
+#     + NUEVO: sistema de cupones de descuento
+# ============================================================
+CUPONES = {
+    "WARDE10": 0.10,
+    "BIENVENIDO15": 0.15,
+    "CLIENTEVIP": 0.20,
+}
+
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='cotizador' style='color:#e0e6ff;'>Cotizador Automatico</h2>", unsafe_allow_html=True)
 st.write("Calcula un estimado al instante segun el servicio, la cantidad y la urgencia:")
@@ -1136,16 +1250,33 @@ with col_cot2:
 with col_cot3:
     urgencia_cot = st.selectbox("Urgencia", list(RECARGO_URGENCIA.keys()), key="urgencia_cotizador")
 
+codigo_cupon = st.text_input("Codigo de cupon (opcional)", key="codigo_cupon_cotizador", placeholder="Ej. WARDE10").strip().upper()
+
 info_servicio = SERVICIOS[servicio_cot]
 multiplicador = RECARGO_URGENCIA[urgencia_cot]
 total_min = info_servicio["min"] * cantidad_cot * multiplicador
 total_max = info_servicio["max"] * cantidad_cot * multiplicador
+
+descuento_aplicado = 0.0
+if codigo_cupon:
+    if codigo_cupon in CUPONES:
+        descuento_aplicado = CUPONES[codigo_cupon]
+        total_min *= (1 - descuento_aplicado)
+        total_max *= (1 - descuento_aplicado)
+    else:
+        st.warning("Ese codigo de cupon no es valido.")
 
 col_res1, col_res2 = st.columns(2)
 with col_res1:
     st.metric("Estimado minimo", f"RD$ {total_min:,.0f}")
 with col_res2:
     st.metric("Estimado maximo", f"RD$ {total_max:,.0f}")
+
+if descuento_aplicado > 0:
+    st.markdown(
+        f"<span class='cupon-badge'>Cupon '{codigo_cupon}' aplicado: -{int(descuento_aplicado*100)}%</span>",
+        unsafe_allow_html=True,
+    )
 
 if multiplicador > 1.0:
     st.caption(f"Incluye recargo por urgencia de {int((multiplicador - 1) * 100)}%. Precio base: {info_servicio['unidad']}.")
@@ -1236,6 +1367,124 @@ with col_fund3:
     )
 
 # ============================================================
+# 11B. NUEVO SISTEMA: CALENDARIO DE CITAS / CONSULTAS
+#      Permite a un visitante agendar una llamada o consulta
+#      gratuita antes de contratar un servicio.
+# ============================================================
+def crear_tabla_citas_si_falta():
+    conn = obtener_conexion_bd()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS citas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            contacto TEXT NOT NULL,
+            fecha_cita TEXT NOT NULL,
+            hora_cita TEXT NOT NULL,
+            motivo TEXT,
+            estado TEXT NOT NULL DEFAULT 'Pendiente',
+            fecha_creacion TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+
+
+def guardar_cita(nombre, contacto, fecha_cita, hora_cita, motivo):
+    crear_tabla_citas_si_falta()
+    conn = obtener_conexion_bd()
+    conn.execute(
+        """
+        INSERT INTO citas (nombre, contacto, fecha_cita, hora_cita, motivo, estado, fecha_creacion)
+        VALUES (?, ?, ?, ?, ?, 'Pendiente', ?)
+        """,
+        (
+            nombre.strip()[:60], contacto.strip()[:40], str(fecha_cita), str(hora_cita),
+            (motivo or "").strip()[:300], datetime.now().strftime("%d/%m/%Y %H:%M"),
+        ),
+    )
+    conn.commit()
+
+
+def listar_citas():
+    crear_tabla_citas_si_falta()
+    conn = obtener_conexion_bd()
+    return conn.execute(
+        "SELECT id, nombre, contacto, fecha_cita, hora_cita, motivo, estado FROM citas ORDER BY fecha_cita, hora_cita"
+    ).fetchall()
+
+
+def actualizar_estado_cita(id_cita, nuevo_estado):
+    conn = obtener_conexion_bd()
+    conn.execute("UPDATE citas SET estado = ? WHERE id = ?", (nuevo_estado, id_cita))
+    conn.commit()
+
+
+import datetime as _dt
+
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+st.markdown("<h2 id='citas' style='color:#e0e6ff;'>Agenda una Consulta Gratuita</h2>", unsafe_allow_html=True)
+st.write("Si prefieres hablar antes de contratar, agenda una llamada corta con nosotros:")
+
+with st.form("form_agendar_cita", clear_on_submit=True):
+    col_cita1, col_cita2 = st.columns(2)
+    with col_cita1:
+        nombre_cita = st.text_input("Tu nombre", max_chars=60, key="nombre_cita_form")
+        fecha_cita_sel = st.date_input(
+            "Fecha deseada", min_value=_dt.date.today(),
+            max_value=_dt.date.today() + _dt.timedelta(days=30), key="fecha_cita_form",
+        )
+    with col_cita2:
+        contacto_cita = st.text_input("WhatsApp o correo", max_chars=40, key="contacto_cita_form")
+        hora_cita_sel = st.selectbox(
+            "Hora deseada",
+            ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM"],
+            key="hora_cita_form",
+        )
+    motivo_cita = st.text_area("De que te gustaria hablar?", max_chars=300, key="motivo_cita_form")
+    enviar_cita = st.form_submit_button("Agendar consulta")
+    if enviar_cita:
+        if not nombre_cita.strip() or not contacto_cita.strip():
+            st.warning("Escribe tu nombre y tu contacto antes de agendar.")
+        else:
+            guardar_cita(nombre_cita, contacto_cita, fecha_cita_sel, hora_cita_sel, motivo_cita)
+            registrar_evento("Cita", f"{nombre_cita} agendo para {fecha_cita_sel.strftime('%d/%m/%Y')} {hora_cita_sel}")
+            st.success(f"Cita solicitada para el {fecha_cita_sel.strftime('%d/%m/%Y')} a las {hora_cita_sel}. Te confirmaremos por tu contacto.")
+
+# ============================================================
+# 11C. NUEVO: NOTIFICACIONES AUTOMATICAS A DISCORD (webhook)
+#      Cuando llega un pedido, lead o cita nueva, se envia un
+#      aviso a un canal de Discord si esta configurado el
+#      secret DISCORD_WEBHOOK_URL. Si no esta configurado, la
+#      app sigue funcionando normal, solo sin notificar.
+# ============================================================
+import json
+import urllib.request
+
+
+def notificar_discord(titulo, descripcion, color=3447003):
+    webhook_url = st.secrets.get("DISCORD_WEBHOOK_URL")
+    if not webhook_url:
+        return
+    try:
+        payload = {
+            "embeds": [{
+                "title": titulo,
+                "description": descripcion,
+                "color": color,
+            }]
+        }
+        req = urllib.request.Request(
+            webhook_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass  # nunca interrumpimos la experiencia del usuario por esto
+
+
+# ============================================================
 # 12. CHAT DE IA 24/7
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
@@ -1250,11 +1499,6 @@ if st.session_state.get("admin_autenticado", False):
 
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
 
-# ------------------------------------------------------------
-# Zona horaria de Republica Dominicana (AST, UTC-4 todo el año,
-# sin horario de verano). Se calcula sin dependencias externas
-# usando timezone + timedelta de la libreria estandar.
-# ------------------------------------------------------------
 from datetime import timezone, timedelta
 
 ZONA_RD = timezone(timedelta(hours=-4))
@@ -1274,8 +1518,6 @@ def obtener_fecha_hora_rd_legible():
 
 
 def construir_system_prompt(es_administrador=False):
-    # Se reconstruye en cada mensaje para que la fecha/hora que recibe
-    # el modelo sea siempre la actual, no un valor fijo del arranque.
     fecha_hora_actual = obtener_fecha_hora_rd_legible()
 
     bloque_admin = ""
@@ -1388,9 +1630,6 @@ with col_chat2:
 
 # ============================================================
 # 13. SISTEMA 3: RESENAS REALES DE CLIENTES
-#     Reemplaza los testimonios ficticios por resenas enviadas por
-#     clientes de verdad, moderadas antes de publicarse (evita spam
-#     y comentarios ofensivos sin filtrar).
 # ============================================================
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='testimonios' style='color:#e0e6ff;'>Lo Que Dicen Nuestros Clientes</h2>", unsafe_allow_html=True)
@@ -1429,6 +1668,7 @@ with st.expander("Dejar mi propia resena"):
                 st.error("No puedes enviar resenas con ese nombre.")
             else:
                 guardar_resena(nombre_resena, comentario_resena, estrellas_resena)
+                registrar_evento("Resena", f"{nombre_resena} dejo {estrellas_resena} estrellas (pendiente de moderar)")
                 st.success("Gracias! Tu resena se publicara luego de una breve revision.")
 
 # ============================================================
@@ -1457,6 +1697,12 @@ with st.form("form_lista_vip", clear_on_submit=True):
             st.warning("Escribe tu nombre y un correo o numero de WhatsApp.")
         else:
             guardar_lead(nombre_vip, contacto_vip, interes_vip)
+            registrar_evento("Lead VIP", f"{nombre_vip} · {contacto_vip} · interes: {interes_vip}")
+            notificar_discord(
+                "Nuevo lead VIP",
+                f"**{nombre_vip}** · {contacto_vip}\nInteres: {interes_vip}",
+                color=10181046,
+            )
             st.success("Listo! Ya estas en la lista VIP de Tecnologia Warde.")
 
 # ============================================================
@@ -1490,7 +1736,6 @@ with st.form("form_chat_global", clear_on_submit=True):
         placeholder="Escribe algo para la comunidad...",
         height=80,
     )
-    # Honeypot anti-spam: campo invisible para bots. Un humano nunca lo llena.
     sitio_web_trampa = st.text_input("Deja este campo vacio", key="honeypot", label_visibility="collapsed")
 
     enviar = st.form_submit_button("Publicar mensaje")
@@ -1511,6 +1756,7 @@ with st.form("form_chat_global", clear_on_submit=True):
                 nombre_visitante, mensaje_visitante,
                 verificado=st.session_state.get("admin_autenticado", False),
             )
+            registrar_evento("Chat global", f"{nombre_visitante}: {mensaje_visitante[:80]}")
             st.toast("Mensaje publicado con exito!")
             st.rerun()
 
@@ -1562,6 +1808,14 @@ faqs = [
     (
         "Que necesito para contratar una pagina web?",
         "Solo necesitas contarnos tu idea, el proposito del sitio y cualquier referencia de diseno. Nosotros nos encargamos de todo el proceso tecnico.",
+    ),
+    (
+        "Puedo agendar una consulta antes de contratar?",
+        "Si, en la seccion 'Agenda una Consulta Gratuita' puedes elegir fecha y hora para hablar con nosotros sin compromiso.",
+    ),
+    (
+        "Tienen cupones de descuento?",
+        "Ocasionalmente si. Puedes probar tu codigo en el Cotizador Automatico para ver si tiene descuento activo.",
     ),
 ]
 
@@ -1634,6 +1888,13 @@ if nombre_cliente and contacto_cliente and servicio_seleccionado != "Selecciona 
             presupuesto_ref, urgencia, detalles_proyecto,
         )
         st.session_state.orden_actual_codigo = codigo_generado
+        registrar_evento("Pedido nuevo", f"{codigo_generado} · {nombre_cliente} · {servicio_seleccionado}")
+        notificar_discord(
+            "Nuevo pedido recibido",
+            f"**Codigo:** {codigo_generado}\n**Cliente:** {nombre_cliente}\n**Contacto:** {contacto_cliente}\n"
+            f"**Servicio:** {servicio_seleccionado}\n**Urgencia:** {urgencia}",
+            color=3066993,
+        )
 
     if st.session_state.orden_actual_codigo:
         codigo_actual = st.session_state.orden_actual_codigo
@@ -1687,11 +1948,52 @@ if consultar:
 
 # ============================================================
 # 16C. SISTEMA 5: PANEL DE ADMINISTRACION UNIFICADO
-#      Centraliza en un solo lugar protegido por contrasena lo que
-#      antes estaba disperso: moderar el chat global, aprobar/rechazar
-#      resenas, actualizar el estado de los pedidos y consultar los
-#      leads de la lista VIP.
+#      + NUEVO: pestanas de Citas y Facturas (PDF)
 # ============================================================
+def generar_factura_pdf(codigo, nombre, servicio, presupuesto, fecha):
+    """Genera una factura simple en PDF para un pedido y devuelve la ruta del archivo."""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas as pdf_canvas
+    from reportlab.lib.units import mm
+
+    ruta = f"/tmp/factura_{codigo}.pdf"
+    c = pdf_canvas.Canvas(ruta, pagesize=letter)
+    width, height = letter
+
+    c.setFillColorRGB(0, 0.10, 0.20)
+    c.rect(0, height - 90, width, 90, fill=1, stroke=0)
+    c.setFillColorRGB(1, 1, 1)
+    c.setFont("Helvetica-Bold", 20)
+    c.drawString(40, height - 45, "TECNOLOGIA WARDE")
+    c.setFont("Helvetica", 10)
+    c.drawString(40, height - 65, "Factura de Servicio - Republica Dominicana")
+
+    c.setFillColorRGB(0, 0, 0)
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(40, height - 130, f"Factura: {codigo}")
+    c.setFont("Helvetica", 11)
+    c.drawString(40, height - 150, f"Fecha: {fecha}")
+    c.drawString(40, height - 170, f"Cliente: {nombre}")
+
+    c.line(40, height - 190, width - 40, height - 190)
+
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(40, height - 215, "Servicio")
+    c.drawString(width - 200, height - 215, "Presupuesto de referencia")
+    c.setFont("Helvetica", 11)
+    c.drawString(40, height - 235, servicio[:55])
+    c.drawString(width - 200, height - 235, str(presupuesto))
+
+    c.line(40, height - 260, width - 40, height - 260)
+
+    c.setFont("Helvetica-Oblique", 9)
+    c.drawString(40, 60, "Metodo de pago: transferencia bancaria (Banco BHD). Garantia de revision incluida.")
+    c.drawString(40, 45, "Gracias por confiar en Tecnologia Warde.")
+
+    c.save()
+    return ruta
+
+
 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='admin' style='color:#e0e6ff;'>Panel de Administracion</h2>", unsafe_allow_html=True)
 
@@ -1704,6 +2006,7 @@ if not st.session_state.admin_autenticado:
     if clave_admin:
         if clave_correcta and hmac.compare_digest(clave_admin, clave_correcta):
             st.session_state.admin_autenticado = True
+            registrar_evento("Login Admin", "Se inicio sesion en el Panel de Administracion")
             st.rerun()
         else:
             st.error("Contrasena incorrecta.")
@@ -1716,8 +2019,8 @@ else:
             st.session_state.admin_autenticado = False
             st.rerun()
 
-    tab_chat, tab_resenas, tab_pedidos, tab_leads = st.tabs(
-        ["Chat Global", "Resenas", "Pedidos", "Leads VIP"]
+    tab_chat, tab_resenas, tab_pedidos, tab_leads, tab_citas, tab_facturas = st.tabs(
+        ["Chat Global", "Resenas", "Pedidos", "Leads VIP", "Citas", "Facturas"]
     )
 
     with tab_chat:
@@ -1744,9 +2047,11 @@ else:
                 col_ap, col_re = st.columns(2)
                 if col_ap.button("Aprobar", key=f"aprobar_resena_{id_r}", use_container_width=True):
                     moderar_resena(id_r, aprobar=True)
+                    registrar_evento("Moderacion", f"Resena de {nombre_r} aprobada")
                     st.rerun()
                 if col_re.button("Rechazar", key=f"rechazar_resena_{id_r}", use_container_width=True):
                     moderar_resena(id_r, aprobar=False)
+                    registrar_evento("Moderacion", f"Resena de {nombre_r} rechazada")
                     st.rerun()
                 st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
@@ -1768,6 +2073,7 @@ else:
                     )
                     if nuevo_estado != estado_o:
                         actualizar_estado_orden(id_o, nuevo_estado)
+                        registrar_evento("Pedido actualizado", f"{codigo_o} -> {nuevo_estado}")
                         st.rerun()
 
     with tab_leads:
@@ -1791,12 +2097,56 @@ else:
                 use_container_width=True,
             )
 
+    # ---- NUEVO: pestana de Citas ----
+    with tab_citas:
+        citas_admin = listar_citas()
+        if not citas_admin:
+            st.info("No hay citas agendadas todavia.")
+        else:
+            estados_cita_posibles = ["Pendiente", "Confirmada", "Realizada", "Cancelada"]
+            for id_c, nombre_c, contacto_c, fecha_c, hora_c, motivo_c, estado_c in citas_admin:
+                col_ci, col_ce = st.columns([3, 2])
+                with col_ci:
+                    st.write(f"**{nombre_c}** · {contacto_c} · {fecha_c} {hora_c}")
+                    if motivo_c:
+                        st.caption(motivo_c)
+                with col_ce:
+                    nuevo_estado_cita = st.selectbox(
+                        "Estado", estados_cita_posibles,
+                        index=estados_cita_posibles.index(estado_c) if estado_c in estados_cita_posibles else 0,
+                        key=f"estado_cita_{id_c}", label_visibility="collapsed",
+                    )
+                    if nuevo_estado_cita != estado_c:
+                        actualizar_estado_cita(id_c, nuevo_estado_cita)
+                        registrar_evento("Cita actualizada", f"{nombre_c} -> {nuevo_estado_cita}")
+                        st.rerun()
+                st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+
+    # ---- NUEVO: pestana de Facturas ----
+    with tab_facturas:
+        st.write("Genera una factura en PDF para cualquier pedido registrado:")
+        ordenes_para_factura = listar_ordenes()
+        if not ordenes_para_factura:
+            st.info("No hay pedidos para facturar todavia.")
+        else:
+            opciones_factura = {f"{c} — {n} — {s}": (c, n, s) for _, c, n, s, _, _ in ordenes_para_factura}
+            seleccion_factura = st.selectbox("Selecciona un pedido", list(opciones_factura.keys()), key="seleccion_factura")
+            if st.button("Generar factura PDF", use_container_width=True):
+                codigo_f, nombre_f, servicio_f = opciones_factura[seleccion_factura]
+                orden_completa = obtener_orden_por_codigo(codigo_f)
+                fecha_f = orden_completa[4] if orden_completa else datetime.now().strftime("%d/%m/%Y")
+                ruta_pdf = generar_factura_pdf(codigo_f, nombre_f, servicio_f, "Segun cotizacion", fecha_f)
+                with open(ruta_pdf, "rb") as archivo_pdf:
+                    st.download_button(
+                        f"Descargar factura {codigo_f}.pdf",
+                        data=archivo_pdf.read(),
+                        file_name=f"factura_{codigo_f}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                    )
+
     # ========================================================
-    # 16D. MODO PROPIETARIO (GOD) — segunda capa de seguridad
-    #      con una contrasena real y distinta (GOD_PASSWORD en
-    #      Streamlit secrets). Solo aparece dentro del Panel de
-    #      Administracion ya autenticado, y da acceso a moderacion
-    #      global (baneos), metricas de trafico y limpieza masiva.
+    # 16D. MODO PROPIETARIO (GOD)
     # ========================================================
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown("<h2 id='god' style='color:#e0e6ff;'>Modo Propietario (GOD)</h2>", unsafe_allow_html=True)
@@ -1810,6 +2160,7 @@ else:
         if clave_owner:
             if clave_owner_correcta and hmac.compare_digest(clave_owner, clave_owner_correcta):
                 st.session_state.owner_autenticado = True
+                registrar_evento("Login GOD", "Se inicio sesion en el Modo Propietario")
                 st.rerun()
             else:
                 st.error("Contrasena incorrecta.")
@@ -1827,14 +2178,61 @@ else:
                 st.rerun()
 
         (
-            tab_g1, tab_g2, tab_g3, tab_g4, tab_g5,
-            tab_g6, tab_g7, tab_g8, tab_g9, tab_g10,
+            tab_g0, tab_g1, tab_g2, tab_g3, tab_g4, tab_g5,
+            tab_g6, tab_g7, tab_g8, tab_g9, tab_g10, tab_g11,
         ) = st.tabs([
-            "Trafico", "Baneos", "Nuevo baneo", "Anuncio", "Estadisticas",
+            "Consola", "Trafico", "Baneos", "Nuevo baneo", "Anuncio", "Estadisticas",
             "Vaciar Chat", "Vaciar Pedidos", "Vaciar Resenas", "Vaciar Leads", "Backup",
+            "Notificaciones",
         ])
 
-        # 1. Trafico: visitas totales de la web (contador global persistente)
+        # ---- NUEVO: Consola en vivo — todo lo que pasa en la app ----
+        with tab_g0:
+            st.caption(
+                "Registro en vivo de todo lo que ocurre en la app: visitas, pedidos, leads, "
+                "resenas, mensajes del chat, citas, logins y moderacion. Se conservan los "
+                "ultimos 500 eventos."
+            )
+            col_con1, col_con2, col_con3 = st.columns([2, 1, 1])
+            with col_con2:
+                if st.button("Actualizar consola", use_container_width=True):
+                    st.rerun()
+            with col_con3:
+                if st.checkbox("Auto-refrescar (5s)", key="auto_refrescar_consola"):
+                    time.sleep(5)
+                    st.rerun()
+
+            eventos = obtener_eventos()
+            if not eventos:
+                st.info("Todavia no se ha registrado ningun evento.")
+            else:
+                colores_tipo = {
+                    "Visita": "#00A8FF", "Pedido nuevo": "#00c864", "Pedido actualizado": "#00CFFF",
+                    "Lead VIP": "#7B2FBE", "Resena": "#f1c40f", "Moderacion": "#f1c40f",
+                    "Chat global": "#cdd6f4", "Cita": "#00CFFF", "Cita actualizada": "#00CFFF",
+                    "Baneo": "#ff5555", "Login Admin": "#00A8FF", "Login GOD": "#7B2FBE",
+                    "Anuncio": "#f1c40f",
+                }
+                consola_html = (
+                    "<div style='background:#05070d; border:1px solid #00A8FF33; border-radius:10px; "
+                    "padding:14px 16px; max-height:420px; overflow-y:auto; font-family:monospace; "
+                    "font-size:0.82rem; line-height:1.7;'>"
+                )
+                for tipo_ev, detalle_ev, fecha_ev in eventos:
+                    color_ev = colores_tipo.get(tipo_ev, "#888ea8")
+                    consola_html += (
+                        f"<div><span style='color:#4a5070;'>[{fecha_ev}]</span> "
+                        f"<span style='color:{color_ev}; font-weight:700;'>{tipo_ev}</span> "
+                        f"<span style='color:#cdd6f4;'>— {detalle_ev}</span></div>"
+                    )
+                consola_html += "</div>"
+                st.markdown(consola_html, unsafe_allow_html=True)
+
+                if st.checkbox("Confirmo que quiero vaciar la consola", key="confirmar_vaciar_consola"):
+                    if st.button("Vaciar consola ahora", use_container_width=True):
+                        limpiar_eventos()
+                        st.rerun()
+
         with tab_g1:
             st.metric("Visitas totales registradas", obtener_visitas_globales())
             st.caption(
@@ -1842,7 +2240,6 @@ else:
                 "recuerda que el contador se reinicia si la app se redespliega (almacenamiento efimero)."
             )
 
-        # 2. Ver y quitar baneos
         with tab_g2:
             baneados_actuales = listar_baneados()
             if not baneados_actuales:
@@ -1853,9 +2250,9 @@ else:
                     col_b1.write(f"**{valor_b}** — {motivo_b or 'sin motivo'} · _{fecha_b}_")
                     if col_b2.button("Quitar", key=f"desbanear_{id_b}", use_container_width=True):
                         desbanear(id_b)
+                        registrar_evento("Baneo", f"'{valor_b}' fue desbaneado")
                         st.rerun()
 
-        # 3. Banear a alguien nuevo
         with tab_g3:
             with st.form("form_nuevo_baneo", clear_on_submit=True):
                 valor_a_banear = st.text_input("Nombre a banear (tal como aparece en el chat/resenas)")
@@ -1865,12 +2262,12 @@ else:
                     if not valor_a_banear.strip():
                         st.warning("Escribe un nombre para banear.")
                     elif banear_valor(valor_a_banear, motivo_baneo):
+                        registrar_evento("Baneo", f"'{valor_a_banear}' fue baneado ({motivo_baneo or 'sin motivo'})")
                         st.success(f"'{valor_a_banear}' fue baneado. Ya no podra publicar mensajes ni resenas.")
                         st.rerun()
                     else:
                         st.warning("Ese nombre ya estaba baneado.")
 
-        # 4. Anuncio fijado en el Chat Global
         with tab_g4:
             anuncio_existente = obtener_anuncio()
             if anuncio_existente:
@@ -1888,10 +2285,10 @@ else:
                         st.warning("Escribe un texto para el anuncio.")
                     else:
                         guardar_anuncio(texto_anuncio_nuevo)
+                        registrar_evento("Anuncio", "Se fijo un nuevo anuncio en el Chat Global")
                         st.success("Anuncio fijado.")
                         st.rerun()
 
-        # 5. Estadisticas generales del negocio
         with tab_g5:
             stats = obtener_estadisticas_generales()
             col_e1, col_e2, col_e3 = st.columns(3)
@@ -1902,8 +2299,9 @@ else:
             col_e4.metric("Leads VIP", stats["leads"])
             col_e5.metric("Baneados", stats["baneados"])
             col_e6.metric("Visitas totales", stats["visitas"])
+            col_e7, _, _ = st.columns(3)
+            col_e7.metric("Citas agendadas", len(listar_citas()))
 
-        # 6-9. Limpieza masiva (con confirmacion explicita para evitar clics accidentales)
         with tab_g6:
             st.warning("Esto borra TODOS los mensajes del Chat Global de la Comunidad. No se puede deshacer.")
             if st.checkbox("Confirmo que quiero vaciar el Chat Global", key="confirmar_vaciar_chat"):
@@ -1936,9 +2334,8 @@ else:
                     st.success("Leads VIP vaciados.")
                     st.rerun()
 
-        # 10. Backup completo de la base de datos (archivo .db descargable)
         with tab_g10:
-            st.write("Descarga una copia completa de la base de datos actual (mensajes, pedidos, resenas, leads y baneos).")
+            st.write("Descarga una copia completa de la base de datos actual (mensajes, pedidos, resenas, leads, citas y baneos).")
             try:
                 with open(DB_PATH, "rb") as archivo_db:
                     st.download_button(
@@ -1950,6 +2347,24 @@ else:
                     )
             except FileNotFoundError:
                 st.info("Aun no hay datos guardados.")
+
+        # ---- NUEVO: probar/configurar notificaciones Discord ----
+        with tab_g11:
+            st.write(
+                "Las notificaciones automaticas se envian a un canal de Discord cuando llega un "
+                "pedido nuevo o un lead VIP, usando un Webhook."
+            )
+            if st.secrets.get("DISCORD_WEBHOOK_URL"):
+                st.markdown("<div class='status-online'><span class='dot-pulse'></span> Webhook configurado</div>", unsafe_allow_html=True)
+                if st.button("Enviar notificacion de prueba", use_container_width=True):
+                    notificar_discord("Prueba de notificacion", "Si ves esto en Discord, todo funciona correctamente.", color=15844367)
+                    st.success("Notificacion de prueba enviada.")
+            else:
+                st.info(
+                    "No hay ningun Webhook configurado todavia. Agrega el secret "
+                    "'DISCORD_WEBHOOK_URL' en Streamlit Cloud con la URL de tu webhook de Discord "
+                    "para activar las notificaciones."
+                )
 
 # ============================================================
 # 17. FOOTER PROFESIONAL
