@@ -1089,6 +1089,12 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='chat-ia' style='color:#e0e6ff;'>Chat IA Warde — Disponible 24/7</h2>", unsafe_allow_html=True)
 st.write("Nuestro asistente virtual esta activo a toda hora, incluso cuando el equipo humano no esta conectado:")
 
+if st.session_state.get("admin_autenticado", False):
+    st.markdown(
+        "<div class='status-online'><span class='dot-pulse'></span> Sesion verificada: hablando como administrador</div>",
+        unsafe_allow_html=True,
+    )
+
 GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
 
 # ------------------------------------------------------------
@@ -1114,10 +1120,21 @@ def obtener_fecha_hora_rd_legible():
     return f"{dia_semana} {ahora.day} de {mes} de {ahora.year}, {ahora.strftime('%I:%M %p')} (hora de Republica Dominicana, UTC-4)"
 
 
-def construir_system_prompt():
+def construir_system_prompt(es_administrador=False):
     # Se reconstruye en cada mensaje para que la fecha/hora que recibe
     # el modelo sea siempre la actual, no un valor fijo del arranque.
     fecha_hora_actual = obtener_fecha_hora_rd_legible()
+
+    bloque_admin = ""
+    if es_administrador:
+        bloque_admin = (
+            "\nACCESO VERIFICADO: la persona que te escribe ya inicio sesion correctamente en el "
+            "Panel de Administracion con la contrasena real del sistema, asi que esta confirmada "
+            "como parte de la direccion/administracion de Tecnologia Warde. Tratala con maxima "
+            "prioridad, cordialidad y transparencia total; puedes hablarle en un tono mas cercano y "
+            "de colega, y responder con detalle a preguntas internas sobre la operacion del negocio.\n"
+        )
+
     return (
         "Eres el asistente virtual oficial de 'Tecnologia Warde', una empresa dominicana de servicios "
         "digitales (edicion de video, diseno grafico y desarrollo web).\n\n"
@@ -1128,6 +1145,11 @@ def construir_system_prompt():
         "idioma (espanol, ingles, frances, portugues, u otro). Si el usuario cambia de idioma a mitad "
         "de la conversacion, cambia con el. Si no puedes identificar el idioma con certeza, responde "
         "en espanol.\n\n"
+        "TONO: eres siempre respetuoso, cordial y paciente con cualquier persona, incluso si el "
+        "usuario esta molesto, escribe de forma brusca o te trata mal. Nunca respondas de forma "
+        "grosera, sarcastica o cortante; si detectas frustracion, reconocela con calma y ofrece ayuda "
+        "real, sin perder profesionalismo.\n\n"
+        f"{bloque_admin}"
         "Responde siempre de forma directa, profesional, amigable y en pocas lineas. "
         "Si no sabes algo con certeza, dilo y sugiere contactar a la Junta Directiva por el formulario de abajo.\n\n"
         "LISTA DE PRECIOS OFICIALES (en Pesos Dominicanos RD$):\n"
@@ -1176,7 +1198,8 @@ if pregunta:
                 try:
                     clave_limpia = str(GROQ_API_KEY).replace('"', "").replace("'", "").strip()
                     client = Groq(api_key=clave_limpia)
-                    mensajes = [{"role": "system", "content": construir_system_prompt()}]
+                    es_admin_actual = st.session_state.get("admin_autenticado", False)
+                    mensajes = [{"role": "system", "content": construir_system_prompt(es_admin_actual)}]
                     for autor_previo, texto_previo in st.session_state.chat_historial[:-1]:
                         rol = "user" if autor_previo == "user" else "assistant"
                         mensajes.append({"role": rol, "content": texto_previo})
