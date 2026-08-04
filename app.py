@@ -64,10 +64,18 @@ def obtener_conexion_bd():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
             mensaje TEXT NOT NULL,
-            fecha TEXT NOT NULL
+            fecha TEXT NOT NULL,
+            verificado INTEGER NOT NULL DEFAULT 0
         )
         """
     )
+    # Migracion suave: si la tabla ya existia de antes sin la columna
+    # "verificado", la agregamos ahora sin perder los mensajes previos.
+    try:
+        conn.execute("ALTER TABLE mensajes_globales ADD COLUMN verificado INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # la columna ya existe
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS ordenes (
@@ -115,17 +123,20 @@ def obtener_conexion_bd():
 def obtener_mensajes(limite=50):
     conn = obtener_conexion_bd()
     filas = conn.execute(
-        "SELECT id, nombre, mensaje, fecha FROM mensajes_globales ORDER BY id DESC LIMIT ?",
+        "SELECT id, nombre, mensaje, fecha, verificado FROM mensajes_globales ORDER BY id DESC LIMIT ?",
         (limite,),
     ).fetchall()
     return list(reversed(filas))
 
 
-def guardar_mensaje(nombre, mensaje):
+def guardar_mensaje(nombre, mensaje, verificado=False):
     conn = obtener_conexion_bd()
     conn.execute(
-        "INSERT INTO mensajes_globales (nombre, mensaje, fecha) VALUES (?, ?, ?)",
-        (nombre.strip()[:40], mensaje.strip()[:300], datetime.now().strftime("%d/%m %H:%M")),
+        "INSERT INTO mensajes_globales (nombre, mensaje, fecha, verificado) VALUES (?, ?, ?, ?)",
+        (
+            nombre.strip()[:40], mensaje.strip()[:300],
+            datetime.now().strftime("%d/%m %H:%M"), int(bool(verificado)),
+        ),
     )
     conn.commit()
 
@@ -1345,7 +1356,10 @@ with st.form("form_chat_global", clear_on_submit=True):
         else:
             st.session_state.nombre_chat_global = nombre_visitante.strip()
             st.session_state.ultimo_envio_ts = ahora
-            guardar_mensaje(nombre_visitante, mensaje_visitante)
+            guardar_mensaje(
+                nombre_visitante, mensaje_visitante,
+                verificado=st.session_state.get("admin_autenticado", False),
+            )
             st.toast("Mensaje publicado con exito!")
             st.rerun()
 
@@ -1356,9 +1370,13 @@ mensajes = obtener_mensajes()
 if not mensajes:
     st.info("Todavia no hay mensajes. Se el primero en escribir algo!")
 else:
-    for id_msg, nombre, texto, fecha in mensajes:
+    for id_msg, nombre, texto, fecha, verificado in mensajes:
         with st.chat_message("user"):
-            st.markdown(f"**{nombre}** · _{fecha}_")
+            etiqueta_verificado = (
+                " <span style='color:#00A8FF; font-size:0.78rem;'>&#9989; Verificado</span>"
+                if verificado else ""
+            )
+            st.markdown(f"**{nombre}**{etiqueta_verificado} · _{fecha}_", unsafe_allow_html=True)
             st.write(texto)
 
 st.caption(
@@ -1556,9 +1574,10 @@ else:
         if not mensajes_admin:
             st.info("No hay mensajes todavia.")
         else:
-            for id_msg, nombre_m, texto_m, fecha_m in mensajes_admin:
+            for id_msg, nombre_m, texto_m, fecha_m, verificado_m in mensajes_admin:
+                marca = " ✅" if verificado_m else ""
                 col_txt, col_btn = st.columns([4, 1])
-                col_txt.write(f"**{nombre_m}** ({fecha_m}): {texto_m}")
+                col_txt.write(f"**{nombre_m}**{marca} ({fecha_m}): {texto_m}")
                 if col_btn.button("Borrar", key=f"admin_borrar_msg_{id_msg}"):
                     borrar_mensaje(id_msg)
                     st.rerun()
