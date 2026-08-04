@@ -115,8 +115,147 @@ def obtener_conexion_bd():
         )
         """
     )
+    # ---- Tablas del Modo Propietario (GOD) ----
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS baneados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            valor TEXT NOT NULL UNIQUE,
+            motivo TEXT,
+            fecha TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS visitas_globales (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            total INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+    conn.execute("INSERT OR IGNORE INTO visitas_globales (id, total) VALUES (1, 0)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS anuncio_fijado (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            texto TEXT,
+            fecha TEXT
+        )
+        """
+    )
     conn.commit()
     return conn
+
+
+# ---- Modo Propietario (GOD): visitas globales ----
+def incrementar_visitas_globales():
+    conn = obtener_conexion_bd()
+    conn.execute("UPDATE visitas_globales SET total = total + 1 WHERE id = 1")
+    conn.commit()
+
+
+def obtener_visitas_globales():
+    conn = obtener_conexion_bd()
+    fila = conn.execute("SELECT total FROM visitas_globales WHERE id = 1").fetchone()
+    return fila[0] if fila else 0
+
+
+# ---- Modo Propietario (GOD): baneos ----
+def banear_valor(valor, motivo=""):
+    conn = obtener_conexion_bd()
+    try:
+        conn.execute(
+            "INSERT INTO baneados (valor, motivo, fecha) VALUES (?, ?, ?)",
+            (valor.strip()[:60], (motivo or "").strip()[:200], datetime.now().strftime("%d/%m/%Y %H:%M")),
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False  # ya estaba baneado
+
+
+def desbanear(id_baneo):
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM baneados WHERE id = ?", (id_baneo,))
+    conn.commit()
+
+
+def listar_baneados():
+    conn = obtener_conexion_bd()
+    return conn.execute("SELECT id, valor, motivo, fecha FROM baneados ORDER BY id DESC").fetchall()
+
+
+def esta_baneado(valor):
+    conn = obtener_conexion_bd()
+    valor_normalizado = (valor or "").strip().lower()
+    filas = conn.execute("SELECT valor FROM baneados").fetchall()
+    return any(valor_normalizado == v[0].strip().lower() for v in filas)
+
+
+# ---- Modo Propietario (GOD): anuncio fijado en el chat global ----
+def guardar_anuncio(texto):
+    conn = obtener_conexion_bd()
+    conn.execute(
+        "INSERT INTO anuncio_fijado (id, texto, fecha) VALUES (1, ?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET texto = excluded.texto, fecha = excluded.fecha",
+        (texto.strip()[:300], datetime.now().strftime("%d/%m/%Y %H:%M")),
+    )
+    conn.commit()
+
+
+def obtener_anuncio():
+    conn = obtener_conexion_bd()
+    fila = conn.execute("SELECT texto, fecha FROM anuncio_fijado WHERE id = 1").fetchone()
+    return fila if fila and fila[0] else None
+
+
+def borrar_anuncio():
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM anuncio_fijado WHERE id = 1")
+    conn.commit()
+
+
+# ---- Modo Propietario (GOD): estadisticas y limpieza masiva ----
+def obtener_estadisticas_generales():
+    conn = obtener_conexion_bd()
+    total_mensajes = conn.execute("SELECT COUNT(*) FROM mensajes_globales").fetchone()[0]
+    total_ordenes = conn.execute("SELECT COUNT(*) FROM ordenes").fetchone()[0]
+    total_resenas = conn.execute("SELECT COUNT(*) FROM resenas").fetchone()[0]
+    total_leads = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
+    total_baneados = conn.execute("SELECT COUNT(*) FROM baneados").fetchone()[0]
+    return {
+        "mensajes": total_mensajes,
+        "ordenes": total_ordenes,
+        "resenas": total_resenas,
+        "leads": total_leads,
+        "baneados": total_baneados,
+        "visitas": obtener_visitas_globales(),
+    }
+
+
+def borrar_todos_mensajes():
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM mensajes_globales")
+    conn.commit()
+
+
+def borrar_todas_ordenes():
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM ordenes")
+    conn.commit()
+
+
+def borrar_todos_leads():
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM leads")
+    conn.commit()
+
+
+def borrar_todas_resenas():
+    conn = obtener_conexion_bd()
+    conn.execute("DELETE FROM resenas")
+    conn.commit()
 
 
 # ---- Mensajes (chat global de la comunidad) ----
@@ -809,13 +948,16 @@ with st.sidebar:
 
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
-    # Contador de visitas por sesion
+    # Contador de visitas por sesion (visible al publico) + contador
+    # global persistente en base de datos (solo visible para el
+    # Modo Propietario). Ambos se incrementan una sola vez por sesion.
     if "visita_contada" not in st.session_state:
         st.session_state.visita_contada = True
         if "total_visitas" not in st.session_state:
             st.session_state.total_visitas = 1
         else:
             st.session_state.total_visitas += 1
+        incrementar_visitas_globales()
 
     st.markdown(
         f"<p style='color:#4a5070; font-size:0.75rem; text-align:center;'>Visitas en esta sesion: {st.session_state.get('total_visitas', 1)}</p>",
@@ -1283,6 +1425,8 @@ with st.expander("Dejar mi propia resena"):
         if enviar_resena:
             if not nombre_resena.strip() or not comentario_resena.strip():
                 st.warning("Escribe tu nombre y tu comentario antes de enviar.")
+            elif esta_baneado(nombre_resena):
+                st.error("No puedes enviar resenas con ese nombre.")
             else:
                 guardar_resena(nombre_resena, comentario_resena, estrellas_resena)
                 st.success("Gracias! Tu resena se publicara luego de una breve revision.")
@@ -1322,6 +1466,11 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 st.markdown("<h2 id='comunidad' style='color:#e0e6ff;'>Chat Global de la Comunidad</h2>", unsafe_allow_html=True)
 st.write("Deja tu mensaje para que lo vean todos los visitantes de la pagina:")
 
+anuncio_activo = obtener_anuncio()
+if anuncio_activo:
+    texto_anuncio, fecha_anuncio = anuncio_activo
+    st.warning(f"📌 **Anuncio:** {texto_anuncio}  \n_Publicado {fecha_anuncio}_")
+
 if "nombre_chat_global" not in st.session_state:
     st.session_state.nombre_chat_global = ""
 
@@ -1351,6 +1500,8 @@ with st.form("form_chat_global", clear_on_submit=True):
             st.warning("No se pudo publicar el mensaje.")
         elif not nombre_visitante.strip() or not mensaje_visitante.strip():
             st.warning("Escribe tu nombre y un mensaje antes de publicar.")
+        elif esta_baneado(nombre_visitante):
+            st.error("No puedes publicar mensajes con ese nombre.")
         elif ahora - st.session_state.ultimo_envio_ts < 5:
             st.warning("Espera unos segundos antes de publicar otro mensaje.")
         else:
@@ -1639,6 +1790,166 @@ else:
                 mime="text/csv",
                 use_container_width=True,
             )
+
+    # ========================================================
+    # 16D. MODO PROPIETARIO (GOD) — segunda capa de seguridad
+    #      con una contrasena real y distinta (GOD_PASSWORD en
+    #      Streamlit secrets). Solo aparece dentro del Panel de
+    #      Administracion ya autenticado, y da acceso a moderacion
+    #      global (baneos), metricas de trafico y limpieza masiva.
+    # ========================================================
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    st.markdown("<h2 id='god' style='color:#e0e6ff;'>Modo Propietario (GOD)</h2>", unsafe_allow_html=True)
+
+    if "owner_autenticado" not in st.session_state:
+        st.session_state.owner_autenticado = False
+
+    if not st.session_state.owner_autenticado:
+        clave_owner = st.text_input("Contrasena de propietario (GOD)", type="password", key="clave_owner_panel")
+        clave_owner_correcta = st.secrets.get("GOD_PASSWORD")
+        if clave_owner:
+            if clave_owner_correcta and hmac.compare_digest(clave_owner, clave_owner_correcta):
+                st.session_state.owner_autenticado = True
+                st.rerun()
+            else:
+                st.error("Contrasena incorrecta.")
+        st.caption(
+            "Nivel adicional de seguridad: requiere la clave 'GOD_PASSWORD' configurada en los "
+            "secrets de Streamlit Cloud, independiente de la del Panel de Administracion."
+        )
+    else:
+        col_owner_top1, col_owner_top2 = st.columns([3, 1])
+        with col_owner_top1:
+            st.success("Acceso concedido al Modo Propietario.")
+        with col_owner_top2:
+            if st.button("Cerrar sesion GOD", use_container_width=True):
+                st.session_state.owner_autenticado = False
+                st.rerun()
+
+        (
+            tab_g1, tab_g2, tab_g3, tab_g4, tab_g5,
+            tab_g6, tab_g7, tab_g8, tab_g9, tab_g10,
+        ) = st.tabs([
+            "Trafico", "Baneos", "Nuevo baneo", "Anuncio", "Estadisticas",
+            "Vaciar Chat", "Vaciar Pedidos", "Vaciar Resenas", "Vaciar Leads", "Backup",
+        ])
+
+        # 1. Trafico: visitas totales de la web (contador global persistente)
+        with tab_g1:
+            st.metric("Visitas totales registradas", obtener_visitas_globales())
+            st.caption(
+                "Se cuenta una visita por cada sesion nueva del navegador. En Streamlit Cloud, "
+                "recuerda que el contador se reinicia si la app se redespliega (almacenamiento efimero)."
+            )
+
+        # 2. Ver y quitar baneos
+        with tab_g2:
+            baneados_actuales = listar_baneados()
+            if not baneados_actuales:
+                st.info("No hay nadie baneado.")
+            else:
+                for id_b, valor_b, motivo_b, fecha_b in baneados_actuales:
+                    col_b1, col_b2 = st.columns([4, 1])
+                    col_b1.write(f"**{valor_b}** — {motivo_b or 'sin motivo'} · _{fecha_b}_")
+                    if col_b2.button("Quitar", key=f"desbanear_{id_b}", use_container_width=True):
+                        desbanear(id_b)
+                        st.rerun()
+
+        # 3. Banear a alguien nuevo
+        with tab_g3:
+            with st.form("form_nuevo_baneo", clear_on_submit=True):
+                valor_a_banear = st.text_input("Nombre a banear (tal como aparece en el chat/resenas)")
+                motivo_baneo = st.text_input("Motivo (opcional)")
+                confirmar_baneo = st.form_submit_button("Banear")
+                if confirmar_baneo:
+                    if not valor_a_banear.strip():
+                        st.warning("Escribe un nombre para banear.")
+                    elif banear_valor(valor_a_banear, motivo_baneo):
+                        st.success(f"'{valor_a_banear}' fue baneado. Ya no podra publicar mensajes ni resenas.")
+                        st.rerun()
+                    else:
+                        st.warning("Ese nombre ya estaba baneado.")
+
+        # 4. Anuncio fijado en el Chat Global
+        with tab_g4:
+            anuncio_existente = obtener_anuncio()
+            if anuncio_existente:
+                st.write(f"Anuncio actual: **{anuncio_existente[0]}**")
+                if st.button("Quitar anuncio", use_container_width=True):
+                    borrar_anuncio()
+                    st.rerun()
+            else:
+                st.info("No hay ningun anuncio fijado ahora mismo.")
+            with st.form("form_anuncio_god", clear_on_submit=True):
+                texto_anuncio_nuevo = st.text_area("Nuevo anuncio para fijar arriba del Chat Global", max_chars=300)
+                publicar_anuncio = st.form_submit_button("Fijar anuncio")
+                if publicar_anuncio:
+                    if not texto_anuncio_nuevo.strip():
+                        st.warning("Escribe un texto para el anuncio.")
+                    else:
+                        guardar_anuncio(texto_anuncio_nuevo)
+                        st.success("Anuncio fijado.")
+                        st.rerun()
+
+        # 5. Estadisticas generales del negocio
+        with tab_g5:
+            stats = obtener_estadisticas_generales()
+            col_e1, col_e2, col_e3 = st.columns(3)
+            col_e1.metric("Mensajes", stats["mensajes"])
+            col_e2.metric("Pedidos", stats["ordenes"])
+            col_e3.metric("Resenas", stats["resenas"])
+            col_e4, col_e5, col_e6 = st.columns(3)
+            col_e4.metric("Leads VIP", stats["leads"])
+            col_e5.metric("Baneados", stats["baneados"])
+            col_e6.metric("Visitas totales", stats["visitas"])
+
+        # 6-9. Limpieza masiva (con confirmacion explicita para evitar clics accidentales)
+        with tab_g6:
+            st.warning("Esto borra TODOS los mensajes del Chat Global de la Comunidad. No se puede deshacer.")
+            if st.checkbox("Confirmo que quiero vaciar el Chat Global", key="confirmar_vaciar_chat"):
+                if st.button("Vaciar Chat Global ahora", type="primary", use_container_width=True):
+                    borrar_todos_mensajes()
+                    st.success("Chat Global vaciado.")
+                    st.rerun()
+
+        with tab_g7:
+            st.warning("Esto borra TODOS los pedidos registrados. No se puede deshacer.")
+            if st.checkbox("Confirmo que quiero vaciar los Pedidos", key="confirmar_vaciar_pedidos"):
+                if st.button("Vaciar Pedidos ahora", type="primary", use_container_width=True):
+                    borrar_todas_ordenes()
+                    st.success("Pedidos vaciados.")
+                    st.rerun()
+
+        with tab_g8:
+            st.warning("Esto borra TODAS las resenas (aprobadas y pendientes). No se puede deshacer.")
+            if st.checkbox("Confirmo que quiero vaciar las Resenas", key="confirmar_vaciar_resenas"):
+                if st.button("Vaciar Resenas ahora", type="primary", use_container_width=True):
+                    borrar_todas_resenas()
+                    st.success("Resenas vaciadas.")
+                    st.rerun()
+
+        with tab_g9:
+            st.warning("Esto borra TODOS los leads de la Lista VIP. No se puede deshacer.")
+            if st.checkbox("Confirmo que quiero vaciar los Leads VIP", key="confirmar_vaciar_leads"):
+                if st.button("Vaciar Leads VIP ahora", type="primary", use_container_width=True):
+                    borrar_todos_leads()
+                    st.success("Leads VIP vaciados.")
+                    st.rerun()
+
+        # 10. Backup completo de la base de datos (archivo .db descargable)
+        with tab_g10:
+            st.write("Descarga una copia completa de la base de datos actual (mensajes, pedidos, resenas, leads y baneos).")
+            try:
+                with open(DB_PATH, "rb") as archivo_db:
+                    st.download_button(
+                        "Descargar backup completo (.db)",
+                        data=archivo_db.read(),
+                        file_name=f"warde_backup_{datetime.now().strftime('%Y%m%d_%H%M')}.db",
+                        mime="application/octet-stream",
+                        use_container_width=True,
+                    )
+            except FileNotFoundError:
+                st.info("Aun no hay datos guardados.")
 
 # ============================================================
 # 17. FOOTER PROFESIONAL
