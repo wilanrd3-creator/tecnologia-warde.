@@ -1479,7 +1479,10 @@ def notificar_discord(titulo, descripcion, color=3447003):
         req = urllib.request.Request(
             webhook_url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (compatible; TecnologiaWardeBot/1.0)",
+            },
         )
         with urllib.request.urlopen(req, timeout=8) as resp:
             codigo_http = resp.getcode()
