@@ -1463,9 +1463,11 @@ import urllib.request
 
 
 def notificar_discord(titulo, descripcion, color=3447003):
+    """Envia una notificacion a Discord. Devuelve (True, None) si funciono,
+    o (False, mensaje_de_error) si fallo, para poder diagnosticar problemas."""
     webhook_url = st.secrets.get("DISCORD_WEBHOOK_URL")
     if not webhook_url:
-        return
+        return False, "No hay ningun DISCORD_WEBHOOK_URL configurado en los secrets."
     try:
         payload = {
             "embeds": [{
@@ -1479,9 +1481,17 @@ def notificar_discord(titulo, descripcion, color=3447003):
             data=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json"},
         )
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass  # nunca interrumpimos la experiencia del usuario por esto
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            codigo_http = resp.getcode()
+        if codigo_http in (200, 204):
+            registrar_evento("Discord", f"Notificacion enviada: {titulo}")
+            return True, None
+        else:
+            registrar_evento("Discord ERROR", f"HTTP {codigo_http} al enviar: {titulo}")
+            return False, f"Discord respondio con codigo {codigo_http}."
+    except Exception as e:
+        registrar_evento("Discord ERROR", f"{titulo}: {str(e)[:200]}")
+        return False, str(e)
 
 
 # ============================================================
@@ -2357,8 +2367,11 @@ else:
             if st.secrets.get("DISCORD_WEBHOOK_URL"):
                 st.markdown("<div class='status-online'><span class='dot-pulse'></span> Webhook configurado</div>", unsafe_allow_html=True)
                 if st.button("Enviar notificacion de prueba", use_container_width=True):
-                    notificar_discord("Prueba de notificacion", "Si ves esto en Discord, todo funciona correctamente.", color=15844367)
-                    st.success("Notificacion de prueba enviada.")
+                    exito, error = notificar_discord("Prueba de notificacion", "Si ves esto en Discord, todo funciona correctamente.", color=15844367)
+                    if exito:
+                        st.success("Notificacion de prueba enviada. Revisa tu canal de Discord.")
+                    else:
+                        st.error(f"No se pudo enviar: {error}")
             else:
                 st.info(
                     "No hay ningun Webhook configurado todavia. Agrega el secret "
